@@ -7,19 +7,39 @@ from pony.orm import *
 
 
 def load_configs(path='data/config.ini'):
+    def parse_percent(p):
+        return float(p.replace('%', ''))/100
+    def parse_times(x):
+        return float(x.replace('x', ''))
+    def parse_range(r):
+        return [int(n) for n in r.split('..')]
+    def parse_seconds(t):
+        t = t.strip()
+        if 'h' in t:
+            tm = t.split('h')
+            if tm[1] == '':
+                return int(tm[0])*60*60
+            else:
+                return int(tm[0])*60*60+int(tm[1].replace('min', ''))*60
+        if 'min' in t:
+            return int(t.replace('min', ''))*60
+        return int(t.replace('s', ''))
+
     conf = RawConfigParser()
     conf.read(path)
     gen = conf['GEN'] if 'GEN' in conf else {}
     battle = conf['BATTLE'] if 'BATTLE' in conf else {}
     return {
         'gen': {
-            'hp': [int(n) for n in gen.get('HP', '30..40').split('..')],
-            'ap': [int(n) for n in gen.get('AP', '21..30').split('..')],
+            'hp': parse_range(gen.get('HP', '30..40')),
+            'ap': parse_range(gen.get('AP', '21..30')),
             'moves': int(gen.get('moves', '4')),
         },
         'battle': {
-            'critical-chance': float(battle.get('critical-chance', '20%').replace('%', ''))/100,
-            'critical-factor': float(battle.get('critical-factor', '2x').replace('x', '')),
+            'critical-chance': parse_percent(battle.get('critical-chance', '20%')),
+            'critical-factor': parse_times(battle.get('critical-factor', '2x')),
+            'season-duration': int(battle.get('season-duration', '10')),
+            'event-interval': parse_seconds(battle.get('event-interval', '10min'))
         }
     }
 
@@ -56,9 +76,10 @@ CONFIGS = load_configs()
 CANON_ROOSTERS = load_canon_roosters()
 ROOSTER_MOVES = load_moves_data()
 TURN_MSG = load_messages_data()
-db = Database()
+DB = Database()
 
-class Rooster(db.Entity):
+
+class Rooster(DB.Entity):
     id = PrimaryKey(int, auto=True)
     created = Optional(datetime, default=lambda: datetime.now())
     name = Optional(str, unique=True, default='Unnamed')
@@ -67,6 +88,7 @@ class Rooster(db.Entity):
     AP = Required(int, default=0)
     hp = 0
     ap = 0
+    is_canon = Optional(bool, default=False)
     moves = Set('Move')
     battles = Set('Battle', reverse='roosters')
     victories = Set('Battle', reverse='winner')
@@ -80,7 +102,8 @@ class Rooster(db.Entity):
                 'sprite': r[1],
                 'HP': randint(*CONFIGS['gen']['hp']),
                 'AP': randint(*CONFIGS['gen']['ap']),
-                'moves': Move.select().random(CONFIGS['gen']['moves'])
+                'moves': Move.select().random(CONFIGS['gen']['moves']),
+                'is_canon': True,
             }
             cls(**data)
         commit()
@@ -132,7 +155,7 @@ class Rooster(db.Entity):
         return self.hp <= 0
 
 
-class Move(db.Entity):
+class Move(DB.Entity):
     id = PrimaryKey(int, auto=True)
     name = Optional(str, default='Unnamed')
     damage = Required(int, default=0)
@@ -152,9 +175,10 @@ class Move(db.Entity):
             move.msg = mv[2]
         commit()
 
-class Battle(db.Entity):
+class Battle(DB.Entity):
     id = PrimaryKey(int, auto=True)
     date = Optional(datetime, default=lambda: datetime.now())
+    season = Required('Season')
     roosters = Set(Rooster, reverse='battles')
     winner = Optional(Rooster, reverse='victories')
     turns = Set('Turn')
@@ -163,7 +187,7 @@ class Battle(db.Entity):
     def new(cls, roosters):
         for rt in roosters:
             rt.reset()
-        bt = cls(roosters=roosters)
+        bt = cls(roosters=roosters, season=Season.last())
         commit()
         return bt
 
@@ -175,16 +199,27 @@ class Battle(db.Entity):
         self.winner = winner
         commit()
 
-class Turn(db.Entity):
+class Turn(DB.Entity):
     id = PrimaryKey(int, auto=True)
     which = Required(int)
     info = Optional(Json)
     battle = Optional(Battle)
 
+class Season(DB.Entity):
+    id = PrimaryKey(int, auto=True)
+    battles = Set(Battle)
+
+    @classmethod
+    def last(cls):
+        return cls.select().sort_by(-1).first()
+
+    def is_done(self):
+        battles = select(b for b in Battle if b.season==self and b.winner)
+        return battles.count() >= CONFIGS['battle']['season-duration']
 
 def init_db(db_file=':memory:'):
-    db.bind(provider='sqlite', filename=db_file, create_db=True)
-    db.generate_mapping(create_tables=True)
+    DB.bind(provider='sqlite', filename=db_file, create_db=True)
+    DB.generate_mapping(create_tables=True)
     with db_session:
         Move.import_data()
         Rooster.init_canon()

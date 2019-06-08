@@ -1,5 +1,5 @@
 
-import os
+import os, sys, time
 from random import seed, choice, random
 from data import *
 from mstdn import MstdnRGB
@@ -9,35 +9,14 @@ class BattleTurns(object):
     a = None
     b = None
     turn = 0
-    seed = None
-    last_winner = None
-    toot = None
-    toot_enabled = False
 
-    def __init__(self, battle, seed=None, toot=False):
+    def __init__(self, battle, seed=None):
         self.battle = battle
-        roosters = tuple(battle.roosters.select())
-        self.a = roosters[0]
-        self.b = roosters[1]
-        self.seed = seed
-        self.toot_enabled = toot
+        self.a, self.b = tuple(battle.roosters.select())
+        self.turn = count(t for t in Turn if t.battle == battle)
 
-    def start(self):
-        seed(self.seed)
-        if self.toot_enabled:
-            self.toot = MstdnRGB()
-        self.post_msg(self.msg('new'))
-        self.post_msg(self.msg('a-stats'))
-        self.post_msg(self.msg('b-stats'))
-        if self.toot_enabled:
-            self.toot.poll(self.a.name, self.b.name)
-
-    def post_msg(self, msg, title=None, subtitle=''):
-        if self.toot_enabled:
-            self.toot.post(msg)
-        if title:
-            msg = '\n\t[%s] %s\n%s' % title, subtitle, msg
-        print(msg)
+    def is_done(self):
+        return bool(self.battle.winner)
 
     def msg(self, key, var=None):
         key = key.upper().replace('-', '_')
@@ -135,9 +114,69 @@ class BattleTurns(object):
                 self.battle.ko(current)
                 yield 'KO',
 
-    def next_msg(self):
-        done = False
-        states = self.next()
+
+class SeasonManager(object):
+    ACTIVE, NEW, DONE = range(3)
+    TIMER, INPUT = range(2)
+    mode = None
+    current = None
+    turns = None
+    toot = None
+
+    def __init__(self, mode=0, toot=False):
+        self.mode = mode
+        if toot:
+            self.toot = MstdnRGB()
+        with db_session:
+            self.current = Season.last()
+
+    def post_msg(self, msg, title=None, subtitle=''):
+        if self.toot:
+            self.toot.post(msg)
+        if title:
+            msg = '\n\t[%s] %s\n%s' % title, subtitle, msg
+        print(msg)
+
+    @db_session
+    def loop(self):
+        while True:
+            state = self.check_state()
+            if state == self.ACTIVE:
+                if not self.turns or self.turns.is_done():
+                    self.new_battle()
+                else:
+                    self.next_turn()
+            elif state == self.NEW:
+                self.new_season()
+            elif state == self.DONE:
+                self.season_done()
+            sys.stdout.flush()
+            if self.mode == self.TIMER:
+                time.sleep(CONFIGS['battle']['event-interval'])
+            elif self.mode == self.INPUT:
+                input()
+                os.system('cls')
+                os.system('clear')
+
+    def new_battle(self):
+        # TODO: rooster selection stuff
+        roosters = Rooster.select().random(2)
+        self.turns = BattleTurns(Battle.new(roosters))
+        self.post_msg(self.turns.msg('new'))
+        self.post_msg(self.turns.msg('a-stats'))
+        self.post_msg(self.turns.msg('b-stats'))
+        if self.toot:
+            self.toot.poll(*[r.name for r in roosters])
+
+    def recover_battle(self):
+        # TODO?
+        rec = Battle.select().sort_by(-1).first()
+        if not rec or rec.winner:
+            return
+        return BattleTurns(rec)
+
+    def next_turn(self):
+        states = self.turns.next()
         for s in states:
             key = s[0]
             args = s[1:]
@@ -145,34 +184,36 @@ class BattleTurns(object):
                 done = True
             if len(args) == 1:
                 args = args[0]
-            self.post_msg(self.msg(key, args))
-        return done
+            self.post_msg(self.turns.msg(key, args))
 
-def gen_test_data():
-    with db_session:
-        for i in range(len(ROOSTER_NAMES)):
-            Rooster.generate(i)
+    def check_state(self):
+        if not self.current:
+            return self.NEW
+        if self.current.is_done():
+            return self.DONE
+        return self.ACTIVE
 
-def clear():
-    os.system('cls')
-    os.system('clear')
+    def season_done(self):
+        self.post_msg('A temporada %s terminou! O grande vencedor foi {winner #TODO}!')
+        self.current = None
 
-def test():
-    import sys
+    def new_season(self):
+        self.current = Season()
+        commit()
+        self.post_msg('A temporada %s irá começar!' % self.current.id)
 
-    clear()
-    init_db('.test.db')
-    gen_test_data()
-    with db_session:
-        turns= BattleTurns(Battle.new(Rooster.select().random(2)), toot='--toot' in sys.argv)
-        turns.start()
-        if not '-y' in sys.argv:
-            input()
-            clear()
-        while not turns.next_msg():
-            if not '-y' in sys.argv:
-                input()
-                clear()
+
+def main(args):
+    init_db(args.db)
+    mode = SeasonManager.TIMER if args.timer else SeasonManager.INPUT
+    man = SeasonManager(mode, args.toot)
+    man.loop()
+
 
 if __name__ == '__main__':
-    test()
+    from argparse import ArgumentParser
+    argp = ArgumentParser('rgb', description='Rinha de Galo BOT')
+    argp.add_argument('-t', '--timer', action='store_true', help='use interval timer mode instead of user input mode')
+    argp.add_argument('-T', '--toot', action='store_true', help='enable Mastodon posts')
+    argp.add_argument('-d', '--db', type=str, default='data/rgb.db', metavar='*.db', help='set database file')
+    main(argp.parse_args())
