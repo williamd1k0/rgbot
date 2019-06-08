@@ -1,4 +1,4 @@
 pony
 pillow
 Mastodon.py
-python-twitter
+tweepy
