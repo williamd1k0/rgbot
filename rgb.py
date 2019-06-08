@@ -2,7 +2,7 @@
 import os, sys, time
 import tk
 import img
-from random import seed, choice, random
+from random import choice, random
 from data import *
 from toot import TootRGB
 from tweet import TweetRGB
@@ -177,10 +177,11 @@ class SeasonManager(object):
         self.post_msg(self.turns.msg('new'))
         self.post_msg(self.turns.msg('a-stats'))
         self.post_msg(self.turns.msg('b-stats'))
+        poll_msg = TURN_MSG['POLL']
         if self.toot:
-            self.toot.poll(*[r.name for r in roosters])
+            self.toot.poll(*[r.name for r in roosters], poll_msg)
         if self.tweet:
-            self.tweet.poll(*[r.name for r in roosters])
+            self.tweet.poll(*[r.name for r in roosters], poll_msg)
         if self.tk:
             tk.show_img(img.create_battle(self.turns.a, self.turns.b))
 
@@ -212,13 +213,15 @@ class SeasonManager(object):
         return self.ACTIVE
 
     def season_done(self):
-        self.post_msg('A temporada %s terminou! O grande vencedor foi {winner #TODO}!')
+        winner = self.current.winner()
+        if winner:
+            self.post_msg(TURN_MSG['SEASON_FINALE'].format(t=self.current.id, win=winner.name))
         self.current = None
 
     def new_season(self):
         self.current = Season()
         commit()
-        self.post_msg('A temporada %s irá começar!' % self.current.id)
+        self.post_msg(TURN_MSG['NEW_SEASON'].format(t=self.current.id))
 
 
 def main(args):

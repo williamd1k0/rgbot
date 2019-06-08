@@ -217,6 +217,18 @@ class Season(DB.Entity):
         battles = select(b for b in Battle if b.season==self and b.winner)
         return battles.count() >= CONFIGS['battle']['season-duration']
 
+    def winner(self):
+        battles = select(b for b in Battle if b.season==self and b.winner)
+        winners = select(b.winner for b in battles)
+        winners_filtered = []
+        for w in winners:
+            wcount = count(b for b in battles if b.winner==w)
+            winners_filtered.append([w, wcount])
+        winners_sorted = sorted(winners_filtered, key=lambda w: w[1])
+        if winners_sorted[-1][1] != winners_sorted[-2][1]:
+            return  winners_sorted[-1][0]
+
+
 def init_db(db_file=':memory:'):
     DB.bind(provider='sqlite', filename=db_file, create_db=True)
     DB.generate_mapping(create_tables=True)

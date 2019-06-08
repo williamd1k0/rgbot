@@ -9,3 +9,6 @@ DAMAGE,{b} sofreu {x} pontos de dano!
 BONUS,Nossa! {a} está super motivado! Seu AP foi curado totalmente!
 REPLENISHED,{a} está descansado e pronto para continuar lutando!
 KO,{b} está nocauteado! {a} é o vitorioso deste round! Parabéns!
+NEW_SEASON,Senhoras e Senhores! Está começando a Temporada {t} da Rinha de Galo Bot!
+POLL,Quem vai ganhar essa luta?
+SEASON_FINALE,A Temporada {t} terminou! O grande vencedor foi {win}!
