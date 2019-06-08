@@ -1,0 +1,11 @@
+key,message
+NEW,A luta de hoje é entre {a} e {b}! Preparem-se!
+A_STATS,"De um lado, temos {rt}, com vitalidade {hp}, pontos de ataque {ap} e os seguintes golpes: {mv[0]}, {mv[1]}, {mv[2]} e {mv[3]}!"
+B_STATS,"Do outro, temos {rt}, com vitalidade {hp}, pontos de ataque {ap} e os seguintes golpes: {mv[0]}, {mv[1]}, {mv[2]} e {mv[3]}! Que vença o melhor!"
+ATK_HIT,", e consegue!"
+ATK_FAIL,", mas {a} está cansado demais para atacar... tá só o pó da rabiola!"
+ATK_CRITICAL,", e acertou em cheio!"
+DAMAGE,{b} sofreu {x} pontos de dano!
+BONUS,Nossa! {a} está super motivado! Seu AP foi curado totalmente!
+REPLENISHED,{a} está descansado e pronto para continuar lutando!
+KO,{b} está nocauteado! {a} é o vitorioso deste round! Parabéns!
