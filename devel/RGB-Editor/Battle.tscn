@@ -1,13 +1,23 @@
-[gd_scene load_steps=4 format=2]
+[gd_scene load_steps=6 format=2]
 
 [ext_resource path="res://Battle.gd" type="Script" id=1]
 [ext_resource path="res://ui/ui_background.png" type="Texture" id=2]
 [ext_resource path="res://ui/ui_ground.png" type="Texture" id=3]
+[ext_resource path="res://ui/OpenDyslexic3-Bold.ttf" type="DynamicFontData" id=4]
+
+[sub_resource type="DynamicFont" id=1]
+size = 30
+use_mipmaps = true
+use_filter = true
+font_data = ExtResource( 4 )
 
 [node name="Battle" type="Control"]
 anchor_right = 1.0
 anchor_bottom = 1.0
 script = ExtResource( 1 )
+__meta__ = {
+"_edit_vertical_guides_": [ 270.0 ]
+}
 
 [node name="Bg" type="TextureRect" parent="."]
 margin_right = 40.0
@@ -40,15 +50,6 @@ texture = ExtResource( 3 )
 anchor_right = 1.0
 anchor_bottom = 1.0
 
-[node name="A" type="ReferenceRect" parent="Roosters"]
-anchor_right = 1.0
-anchor_bottom = 1.0
-margin_left = 132.0
-margin_top = 175.0
-margin_right = -793.0
-margin_bottom = -225.0
-border_color = Color( 0.054902, 0, 1, 1 )
-
 [node name="B" type="ReferenceRect" parent="Roosters"]
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -56,4 +57,38 @@ margin_left = 792.0
 margin_top = 175.0
 margin_right = -133.0
 margin_bottom = -225.0
+
+[node name="A" type="Control" parent="Roosters"]
+margin_right = 40.0
+margin_bottom = 40.0
+
+[node name="Rect" type="ReferenceRect" parent="Roosters/A"]
+margin_left = 132.0
+margin_top = 160.0
+margin_right = 407.0
+margin_bottom = 435.0
+border_color = Color( 0.054902, 0, 1, 1 )
+
+[node name="Name" type="Label" parent="Roosters/A"]
+margin_left = 52.0
+margin_right = 489.0
+margin_bottom = 60.0
+custom_fonts/font = SubResource( 1 )
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+text = "Galo do Atlético Mineiro"
+align = 1
+
+[node name="HP" type="ColorRect" parent="Roosters/A"]
+margin_left = 132.0
+margin_top = 72.0
+margin_right = 407.0
+margin_bottom = 102.0
+color = Color( 1, 0, 0, 1 )
+
+[node name="AP" type="ColorRect" parent="Roosters/A"]
+margin_left = 132.0
+margin_top = 110.0
+margin_right = 407.0
+margin_bottom = 140.0
+color = Color( 0, 0.0392157, 1, 1 )
 

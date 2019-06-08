@@ -181,3 +181,10 @@ class Turn(db.Entity):
     info = Optional(Json)
     battle = Optional(Battle)
 
+
+def init_db(db_file=':memory:'):
+    db.bind(provider='sqlite', filename=db_file, create_db=True)
+    db.generate_mapping(create_tables=True)
+    with db_session:
+        Move.import_data()
+        Rooster.init_canon()

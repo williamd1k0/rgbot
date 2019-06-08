@@ -1,35 +1,38 @@
 
 import os
 from PIL import Image, ImageDraw, ImageFont, ImageOps
+from data import Rooster, init_db, db_session
 
 LEFT = 0
 RIGHT = 1
 BAR_MARGIN = 3
-BAR_WIDTH = 180
+BAR_WIDTH = 275
 ASSETS_ROOT = 'data/assets/'
 ROOSTERS_ROOT = os.path.join(ASSETS_ROOT, 'roosters')
 REGULAR_FONT = os.path.join(ASSETS_ROOT, 'ui/OpenDyslexic3-Regular.ttf')
 BOLD_FONT = os.path.join(ASSETS_ROOT, 'ui/OpenDyslexic3-Bold.ttf')
+FONT_CACHE = {}
 
-FONT_CACHE = {
-    REGULAR_FONT: {
-        42: ImageFont.truetype(REGULAR_FONT, 42),
-    },
-    BOLD_FONT: {
-        42: ImageFont.truetype(BOLD_FONT, 42)
-    }
-}
+
+def font(path, size):
+    if not path in FONT_CACHE:
+        FONT_CACHE[path] = {}
+    if not size in FONT_CACHE[path]:
+        FONT_CACHE[path][size] = ImageFont.truetype(path, size)
+    return FONT_CACHE[path][size]
+
 
 def create_hpbar(factor, width=BAR_WIDTH, anchor=LEFT, bg_color='#000000', fg_color='#FF0000'):
     MARGIN = BAR_MARGIN
     bg_size = width, 30
-    fg_width = round(bg_size[0]*factor)
-    fg_size = fg_width-MARGIN*2, bg_size[1]-MARGIN*2
-
     bg = Image.new('RGB', bg_size, color=bg_color)
-    fg = Image.new('RGB', fg_size, color=fg_color)
-    x_pos = MARGIN if anchor == LEFT else width-fg_width+MARGIN
-    bg.paste(fg, (x_pos, MARGIN))
+
+    fg_width = round(bg_size[0]*factor)
+    if fg_width > 0:
+        fg_size = fg_width-MARGIN*2, bg_size[1]-MARGIN*2
+        fg = Image.new('RGB', fg_size, color=fg_color)
+        x_pos = MARGIN if anchor == LEFT else width-fg_width+MARGIN
+        bg.paste(fg, (x_pos, MARGIN))
 
     if 1:
         d = ImageDraw.Draw(bg)
@@ -43,42 +46,63 @@ def create_movebar(text, ap=0, color='#000000', path='data/assets/ui/ui_button.p
     bar = Image.open(path)
     d = ImageDraw.Draw(bar)
     
-    name_fnt = FONT_CACHE[REGULAR_FONT][42]
+    name_fnt = font(REGULAR_FONT, 42)
     name_size = d.textsize(text, font=name_fnt)
     d.text(((bar.width-name_size[0])//2, (bar.height-name_size[1])//8), text, font=name_fnt, fill=color)
     
-    ap_fnt = FONT_CACHE[BOLD_FONT][42]
+    ap_fnt = font(BOLD_FONT, 42)
     ap_txt = 'AP%02d' % ap
     ap_size = d.textsize(ap_txt, font=ap_fnt)
     d.text((bar.width-ap_size[0]-10, bar.height-ap_size[1]-10), ap_txt, font=ap_fnt, fill=color)
     return bar
 
-def create_battle(a, b, mirror=RIGHT):
+def create_battle(a:Rooster, b:Rooster, mirror=RIGHT):
+    X, Y, W, H = range(4)
     bg = Image.open('data/assets/ui/ui_background.png')
     gr = Image.open('data/assets/ui/ui_ground.png').convert('RGBA')
-    gr_pos = {
-        LEFT: (60, 400),
-        RIGHT: (720, 400),
-    }
-    for pos in gr_pos.values():
-        bg.paste(gr, pos, gr)
+    lcenter = 270
+    rcenter = bg.width - lcenter
+    centers = lcenter, rcenter
+    for c in centers:
+        bg.paste(gr, (c-gr.width//2, 400), gr)
+
+    rt_rect_size = 275, 275
+    rt_rect_y = 175
     rt_rect = {
-        LEFT: (132, 175, 275, 275),
-        RIGHT: (792, 175, 275, 275),
+        LEFT: (centers[LEFT]-rt_rect_size[X]//2, rt_rect_y, *rt_rect_size),
+        RIGHT: (centers[RIGHT]-rt_rect_size[X]//2, rt_rect_y, *rt_rect_size),
     }
     rts = {
-        LEFT: Image.open(os.path.join(ROOSTERS_ROOT, a)).convert('RGBA'),
-        RIGHT: Image.open(os.path.join(ROOSTERS_ROOT, b)).convert('RGBA'),
+        LEFT: a,
+        RIGHT: b,
     }
-    X, Y, W, H = range(4)
+    hp_y = 72
+    ap_y = 110
+    hp_w = BAR_WIDTH
     for r in rts.keys():
-        im = rts[r]
+        rt = rts[r]
+        # Rooster sprite
+        im = Image.open(os.path.join(ROOSTERS_ROOT, rt.sprite)).convert('RGBA')
         if r == mirror:
             im = ImageOps.mirror(im)
         rect = rt_rect[r]
         im.thumbnail(rt_rect[r][2:])
         pos = rect[X] + (rect[W] - im.width)//2, rect[Y] + rect[H] - im.height
         bg.paste(im, pos, im)
+        # Rooster name
+        d = ImageDraw.Draw(bg)
+        name_fnt = font(BOLD_FONT, 30)
+        name_size = d.textsize(rt.name, font=name_fnt)
+        pos = centers[r]-name_size[X]//2, 0
+        d.text(pos, rt.name, font=name_fnt, fill='#000000')
+        # HP and AP
+        anchor = LEFT if r == RIGHT else RIGHT
+        hp_x = centers[r]-hp_w//2
+        hp = create_hpbar(rt.hp/rt.HP, width=hp_w, anchor=anchor)
+        bg.paste(hp, (hp_x, hp_y))
+        if 1:
+            ap = create_hpbar(rt.ap/rt.AP, width=hp_w, anchor=anchor, fg_color='#0000FF')
+            bg.paste(ap, (hp_x, ap_y))
     return bg
 
 
@@ -86,7 +110,7 @@ if __name__ == '__main__':
     from cmd import Cmd
 
     class ImagePreviewCmd(Cmd):
-        prompt = 'img> '
+        prompt = 'gen> '
         intro = "Image generation preview. Type help/? to list commands"
 
         def do_exit(self, inp):
@@ -125,16 +149,21 @@ if __name__ == '__main__':
             else:
                 value = int(args[0].replace('%', ''))/100
             create_hpbar(value, anchor=anchor).show()
-        
+
+        @db_session
         def do_battle(self, args):
-            default = 'rooster.png'
+            """Generate battle image (needs db session).\n\tUsage: battle [sprite-a] [sprite-b]
+            """
             args = args.strip().split(' ')
-            a = default
-            b = default
+            a = Rooster.select().random(1)[0]
+            b = Rooster.select().random(1)[0]
             if args[0] != '':
-                a = args[0]
+                a = Rooster.get(sprite=args[0])
                 if len(args) > 1:
-                    b = args[1]
+                    b = Rooster.get(sprite=args[1])
+            a.reset()
+            b.reset()
             create_battle(a, b).show()
-        
+
+    init_db()
     ImagePreviewCmd().cmdloop()

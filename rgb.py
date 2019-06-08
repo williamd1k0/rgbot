@@ -148,13 +148,6 @@ class BattleTurns(object):
             self.post_msg(self.msg(key, args))
         return done
 
-
-def init_db(db_file=':memory:'):
-    db.bind(provider='sqlite', filename=db_file, create_db=True)
-    db.generate_mapping(create_tables=True)
-    with db_session:
-        Move.import_data()
-
 def gen_test_data():
     with db_session:
         for i in range(len(ROOSTER_NAMES)):
