@@ -1,5 +1,7 @@
 
 import os, sys, time
+import tk
+import img
 from random import seed, choice, random
 from data import *
 from toot import TootRGB
@@ -124,8 +126,9 @@ class SeasonManager(object):
     turns = None
     toot = None
     tweet = None
+    tk = False
 
-    def __init__(self, mode=0, tweet=False, toot=False):
+    def __init__(self, mode=0, tweet=False, toot=False, tk_=False):
         self.mode = mode
         if toot:
             self.toot = TootRGB()
@@ -133,6 +136,9 @@ class SeasonManager(object):
             self.tweet = TweetRGB()
         with db_session:
             self.current = Season.last()
+        if tk_:
+            self.tk = tk_
+            tk.init_tk()
 
     def post_msg(self, msg, title=None, subtitle=''):
         if self.toot:
@@ -175,6 +181,8 @@ class SeasonManager(object):
             self.toot.poll(*[r.name for r in roosters])
         if self.tweet:
             self.tweet.poll(*[r.name for r in roosters])
+        if self.tk:
+            tk.show_img(img.create_battle(self.turns.a, self.turns.b))
 
     def recover_battle(self):
         # TODO?
@@ -193,6 +201,8 @@ class SeasonManager(object):
             if len(args) == 1:
                 args = args[0]
             self.post_msg(self.turns.msg(key, args))
+        if self.tk:
+            tk.show_img(img.create_battle(self.turns.a, self.turns.b))
 
     def check_state(self):
         if not self.current:
@@ -214,7 +224,7 @@ class SeasonManager(object):
 def main(args):
     init_db(args.db)
     mode = SeasonManager.WAIT if args.wait else SeasonManager.INPUT
-    man = SeasonManager(mode, args.tweet, args.toot)
+    man = SeasonManager(mode, args.tweet, args.toot, args.tk)
     man.loop()
 
 
@@ -224,5 +234,6 @@ if __name__ == '__main__':
     argp.add_argument('-w', '--wait', action='store_true', help='use interval between events instead of user input')
     argp.add_argument('-T', '--toot', action='store_true', help='enable Mastodon posts')
     argp.add_argument('-t', '--tweet', action='store_true', help='enable Twitter posts (no polls)')
+    argp.add_argument('-k', '--tk', action='store_true', help='enable Tk for image debug')
     argp.add_argument('-d', '--db', type=str, default='data/rgb.db', metavar='*.db', help='set database file')
     main(argp.parse_args())

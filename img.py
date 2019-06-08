@@ -108,6 +108,7 @@ def create_battle(a:Rooster, b:Rooster, mirror=RIGHT):
 
 if __name__ == '__main__':
     from cmd import Cmd
+    import tk
 
     class ImagePreviewCmd(Cmd):
         prompt = 'gen> '
@@ -131,7 +132,7 @@ if __name__ == '__main__':
                 import random
                 ap = random.randint(0, 30)
             text = ' '.join(args[1 if has_ap else 0:])
-            create_movebar(text, ap).show()
+            tk.show_img(create_movebar(text, ap))
 
         def do_hp(self, args):
             """Generate HP bar.\n\tUsage: hp [value=0..100] [anchor=left|right]
@@ -143,12 +144,14 @@ if __name__ == '__main__':
             }
             anchor = random.choice(list(anchors.values()))
             if len(args) > 1:
-                anchor = anchors.get(args[1]) or anchor
+                print(args)
+                anc = anchors.get(args[1])
+                anchor = anc if anc != None else anchor
             if args[0] == '':
                 value = random.random()
             else:
                 value = int(args[0].replace('%', ''))/100
-            create_hpbar(value, anchor=anchor).show()
+            tk.show_img(create_hpbar(value, anchor=anchor))
 
         @db_session
         def do_battle(self, args):
@@ -163,7 +166,8 @@ if __name__ == '__main__':
                     b = Rooster.get(sprite=args[1])
             a.reset()
             b.reset()
-            create_battle(a, b).show()
+            tk.show_img(create_battle(a, b))
 
     init_db()
+    tk.init_tk()
     ImagePreviewCmd().cmdloop()
