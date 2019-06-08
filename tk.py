@@ -9,6 +9,7 @@ PANEL = None
 def init_tk():
     global ROOT, PANEL
     ROOT = Tk()
+    ROOT.title('Rinha de Galo BOT [Tk]')
     PANEL = Label(ROOT)
 
 def show_img(img):
