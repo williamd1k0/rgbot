@@ -2,7 +2,8 @@
 import os, sys, time
 from random import seed, choice, random
 from data import *
-from mstdn import MstdnRGB
+from toot import TootRGB
+from tweet import TweetRGB
 
 class BattleTurns(object):
     battle = None
@@ -10,7 +11,7 @@ class BattleTurns(object):
     b = None
     turn = 0
 
-    def __init__(self, battle, seed=None):
+    def __init__(self, battle):
         self.battle = battle
         self.a, self.b = tuple(battle.roosters.select())
         self.turn = count(t for t in Turn if t.battle == battle)
@@ -117,22 +118,27 @@ class BattleTurns(object):
 
 class SeasonManager(object):
     ACTIVE, NEW, DONE = range(3)
-    TIMER, INPUT = range(2)
+    WAIT, INPUT = range(2)
     mode = None
     current = None
     turns = None
     toot = None
+    tweet = None
 
-    def __init__(self, mode=0, toot=False):
+    def __init__(self, mode=0, tweet=False, toot=False):
         self.mode = mode
         if toot:
-            self.toot = MstdnRGB()
+            self.toot = TootRGB()
+        if tweet:
+            self.tweet = TweetRGB()
         with db_session:
             self.current = Season.last()
 
     def post_msg(self, msg, title=None, subtitle=''):
         if self.toot:
             self.toot.post(msg)
+        if self.tweet:
+            self.tweet.post(msg)
         if title:
             msg = '\n\t[%s] %s\n%s' % title, subtitle, msg
         print(msg)
@@ -151,7 +157,7 @@ class SeasonManager(object):
             elif state == self.DONE:
                 self.season_done()
             sys.stdout.flush()
-            if self.mode == self.TIMER:
+            if self.mode == self.WAIT:
                 time.sleep(CONFIGS['battle']['event-interval'])
             elif self.mode == self.INPUT:
                 input()
@@ -167,6 +173,8 @@ class SeasonManager(object):
         self.post_msg(self.turns.msg('b-stats'))
         if self.toot:
             self.toot.poll(*[r.name for r in roosters])
+        if self.tweet:
+            self.tweet.poll(*[r.name for r in roosters])
 
     def recover_battle(self):
         # TODO?
@@ -205,15 +213,16 @@ class SeasonManager(object):
 
 def main(args):
     init_db(args.db)
-    mode = SeasonManager.TIMER if args.timer else SeasonManager.INPUT
-    man = SeasonManager(mode, args.toot)
+    mode = SeasonManager.WAIT if args.wait else SeasonManager.INPUT
+    man = SeasonManager(mode, args.tweet, args.toot)
     man.loop()
 
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
     argp = ArgumentParser('rgb', description='Rinha de Galo BOT')
-    argp.add_argument('-t', '--timer', action='store_true', help='use interval timer mode instead of user input mode')
+    argp.add_argument('-w', '--wait', action='store_true', help='use interval between events instead of user input')
     argp.add_argument('-T', '--toot', action='store_true', help='enable Mastodon posts')
+    argp.add_argument('-t', '--tweet', action='store_true', help='enable Twitter posts (no polls)')
     argp.add_argument('-d', '--db', type=str, default='data/rgb.db', metavar='*.db', help='set database file')
     main(argp.parse_args())
