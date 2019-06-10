@@ -1,7 +1,7 @@
 
 import os
 from mastodon import Mastodon
-from data import SnsAPI, SnsStatus, commit, db_session
+from data import SnsAPI, SnsStatus, commit
 
 
 TOKEN = os.environ.get('MSTDN_TOKEN')
@@ -14,7 +14,7 @@ else:
     from random import randint
     class DummyMstdnApi(object):
         def status_post(self, *args, **kargs):
-            print('[DummyMstdnApi]', args, kargs)
+            print('\t[DummyMstdnApi]', args, kargs)
             return { 'id': randint(0, 999999999) }
         def make_poll(*args):
             return
@@ -33,7 +33,6 @@ class TootRGB(SnsAPI):
     def set_api(self, mstdn_api=mstdn_api):
         self.api = mstdn_api
 
-    @db_session
     def post(self, msg, img=None, reply=True):
         reply_id = self.last_status_id() if reply and len(self.status) > 0 else None
         status = self.api.status_post(msg, in_reply_to_id=reply_id)

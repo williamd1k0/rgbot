@@ -1,7 +1,7 @@
 
 import os
 import tweepy
-from data import SnsAPI, commit
+from data import SnsAPI, SnsStatus, commit
 
 API_KEY = os.environ.get('TWITTER_API_KEY')
 API_SECRET =  os.environ.get('TWITTER_API_SECRET')
@@ -19,7 +19,7 @@ else:
     Status = namedtuple('Status', ['id'])
     class DummyTwitterApi(object):
         def update_status(self, *args, **kargs):
-            print('[DummyTwitterApi]', args, kargs)
+            print('\t[DummyTwitterApi]', args, kargs)
             return Status(randint(0, 999999999))
     twitter_api = DummyTwitterApi()
 
@@ -38,7 +38,7 @@ class TweetRGB(SnsAPI):
         self.api = twitter_api
 
     def post(self, msg, img=None, reply=True):
-        reply_id = elf.last_status_id() if reply and len(self.status) > 0 else None
+        reply_id = self.last_status_id() if reply and len(self.status) > 0 else None
         status = self.api.update_status(msg, in_reply_to_status_id=reply_id)
         SnsStatus(status_id=status.id, sns_api=self.id)
         commit()

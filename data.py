@@ -182,7 +182,6 @@ class Move(DB.Entity):
 class Battle(DB.Entity):
     id = PrimaryKey(int, auto=True)
     date = Optional(datetime, default=lambda: datetime.now())
-    info = Optional(Json, default={})
     season = Required('Season')
     roosters = Set(Rooster, reverse='battles')
     winner = Optional(Rooster, reverse='victories')
