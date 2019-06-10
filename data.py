@@ -84,10 +84,10 @@ class Rooster(DB.Entity):
     created = Optional(datetime, default=lambda: datetime.now())
     name = Optional(str, unique=True, default='Unnamed')
     sprite = Optional(str)
-    HP = Required(int, default=0)
-    AP = Required(int, default=0)
-    hp = 0
-    ap = 0
+    HP = Required(int, column='hp_total', default=0)  # Total HP
+    hp = Optional(int, column='hp_current')  # Current HP
+    AP = Required(int, column='ap_total', default=0)  # Total AP
+    ap = Optional(int, column='ap_current')  # Current AP
     is_canon = Optional(bool, default=False)
     moves = Set('Move')
     battles = Set('Battle', reverse='roosters')
@@ -141,15 +141,19 @@ class Rooster(DB.Entity):
 
     def replenish(self):
         self.ap = self.AP
+        commit()
     
     def revive(self):
         self.hp = self.HP
+        commit()
 
     def damage(self, d):
-        self.hp -= d
+        self.hp -= int(d)
+        commit()
 
     def attack(self, move):
-        self.ap -= move.cost
+        self.ap -= int(move.cost)
+        commit()
 
     def is_dead(self):
         return self.hp <= 0
@@ -178,10 +182,12 @@ class Move(DB.Entity):
 class Battle(DB.Entity):
     id = PrimaryKey(int, auto=True)
     date = Optional(datetime, default=lambda: datetime.now())
+    info = Optional(Json, default={})
     season = Required('Season')
     roosters = Set(Rooster, reverse='battles')
     winner = Optional(Rooster, reverse='victories')
     turns = Set('Turn')
+    sns = Set('SnsAPI')
 
     @classmethod
     def new(cls, roosters):
@@ -195,9 +201,16 @@ class Battle(DB.Entity):
     def get_turn_count(cls):
         return [len(t.turns) for t in cls.select()]
 
+    @classmethod
+    def last_battle(cls):
+        return cls.select().sort_by(-1).first()
+
     def ko(self, winner):
         self.winner = winner
         commit()
+
+    def last_turn(self):
+        return select(t for t in Turn if t.battle==self).sort_by(-1).first()
 
 class Turn(DB.Entity):
     id = PrimaryKey(int, auto=True)
@@ -227,6 +240,22 @@ class Season(DB.Entity):
         winners_sorted = sorted(winners_filtered, key=lambda w: w[1])
         if winners_sorted[-1][1] != winners_sorted[-2][1]:
             return  winners_sorted[-1][0]
+
+
+class SnsAPI(DB.Entity):
+    id = PrimaryKey(int, auto=True)
+    status = Set('SnsStatus')
+    battle = Optional(Battle)
+
+    def last_status_id(self):
+        status = self.status.select().sort_by(-1).first()
+        if status:
+            return status.status_id
+
+class SnsStatus(DB.Entity):
+    id = PrimaryKey(int, auto=True)
+    status_id = Optional(int)
+    sns_api = Optional(SnsAPI)
 
 
 def init_db(db_file=':memory:'):

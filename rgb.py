@@ -12,11 +12,13 @@ class BattleTurns(object):
     a = None
     b = None
     turn = 0
+    toot = None
+    tweet = None
 
     def __init__(self, battle):
         self.battle = battle
-        self.a, self.b = tuple(battle.roosters.select())
-        self.turn = count(t for t in Turn if t.battle == battle)
+        self.a, self.b = battle.roosters.select()
+        self.turn = battle.turns.count()
 
     def is_done(self):
         return bool(self.battle.winner)
@@ -64,7 +66,7 @@ class BattleTurns(object):
             return TURN_MSG[key].format(a=a, b=b)
     
     def serialize_info(self, info):
-        data = []
+        data = { 'states': [] }
         for inf in info:
             dt = {
                 'type': inf[0],
@@ -76,7 +78,7 @@ class BattleTurns(object):
                     dt['info'].append(arg.name)
                 else:
                     dt['info'].append(arg)
-            data.append(dt)
+            data['states'].append(dt)
         return data
 
     def next(self):
@@ -128,32 +130,43 @@ class SeasonManager(object):
     tweet = None
     tk = False
 
+    @db_session
     def __init__(self, mode=0, tweet=False, toot=False, tk_=False):
         self.mode = mode
         if toot:
-            self.toot = TootRGB()
+            self.toot = TootRGB.new()
         if tweet:
-            self.tweet = TweetRGB()
+            self.tweet = TweetRGB.new()
         with db_session:
             self.current = Season.last()
         if tk_:
             self.tk = tk_
             tk.init_tk()
 
-    def post_msg(self, msg, title=None, subtitle=''):
-        if self.toot:
-            self.toot.post(msg)
-        if self.tweet:
-            self.tweet.post(msg)
+    def post_msg(self, msg, title=None, subtitle='', battle=True, reply=True):
+        toot = self.get_toot(battle)
+        if toot:
+            toot.post(msg, reply=reply)
+        tweet = self.get_tweet(battle)
+        if tweet:
+            tweet.post(msg, reply=reply)
         if title:
             msg = '\n\t[%s] %s\n%s' % title, subtitle, msg
         print(msg)
+
+    def get_toot(self, battle=True):
+        return self.toot if not battle else self.turns.toot if self.turns else None
+
+    def get_tweet(self, battle=True):
+        return self.tweet if not battle else self.turns.tweet if self.turns else None
 
     @db_session
     def loop(self):
         while True:
             state = self.check_state()
             if state == self.ACTIVE:
+                if not self.turns:
+                    self.recover_battle()
                 if not self.turns or self.turns.is_done():
                     self.new_battle()
                 else:
@@ -173,7 +186,12 @@ class SeasonManager(object):
     def new_battle(self):
         # TODO: rooster selection stuff
         roosters = Rooster.select().random(2)
-        self.turns = BattleTurns(Battle.new(roosters))
+        battle = Battle.new(roosters)
+        self.turns = BattleTurns(battle)
+        if self.toot:
+            self.turns.toot = TootRGB.new(battle)
+        if self.tweet:
+            self.turns.tweet = TweetRGB.new(battle)
         self.post_msg(self.turns.msg('new'))
         self.post_msg(self.turns.msg('a-stats'))
         self.post_msg(self.turns.msg('b-stats'))
@@ -187,10 +205,20 @@ class SeasonManager(object):
 
     def recover_battle(self):
         # TODO?
-        rec = Battle.select().sort_by(-1).first()
-        if not rec or rec.winner:
+        bt = Battle.last_battle()
+        if not bt or bt.winner:
             return
-        return BattleTurns(rec)
+        self.turns = BattleTurns(bt)
+        if self.toot:
+            self.turns.toot = TootRGB.get(battle=bt)
+            self.turns.toot.set_api()
+        if self.tweet:
+            self.turns.tweet = TweetRGB.get(battle=bt)
+            self.turns.tweet.set_api()
+
+    def recover_sns_status(self):
+        if self.toot:
+            self.toot
 
     def next_turn(self):
         states = self.turns.next()
@@ -215,13 +243,13 @@ class SeasonManager(object):
     def season_done(self):
         winner = self.current.winner()
         if winner:
-            self.post_msg(TURN_MSG['SEASON_FINALE'].format(t=self.current.id, win=winner.name))
+            self.post_msg(TURN_MSG['SEASON_FINALE'].format(t=self.current.id, win=winner.name), battle=False, reply=False)
         self.current = None
 
     def new_season(self):
         self.current = Season()
         commit()
-        self.post_msg(TURN_MSG['NEW_SEASON'].format(t=self.current.id))
+        self.post_msg(TURN_MSG['NEW_SEASON'].format(t=self.current.id), battle=False, reply=False)
 
 
 def main(args):

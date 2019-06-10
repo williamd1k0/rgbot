@@ -1,6 +1,7 @@
 
 import os
 import tweepy
+from data import SnsAPI, commit
 
 API_KEY = os.environ.get('TWITTER_API_KEY')
 API_SECRET =  os.environ.get('TWITTER_API_SECRET')
@@ -12,24 +13,44 @@ if TOKEN and TOKEN_SECRET:
     auth = tweepy.OAuthHandler(API_KEY, API_SECRET)
     auth.set_access_token(TOKEN, TOKEN_SECRET)
     twitter_api = tweepy.API(auth)
+else:
+    from random import randint
+    from collections import namedtuple
+    Status = namedtuple('Status', ['id'])
+    class DummyTwitterApi(object):
+        def update_status(self, *args, **kargs):
+            print('[DummyTwitterApi]', args, kargs)
+            return Status(randint(0, 999999999))
+    twitter_api = DummyTwitterApi()
 
-class TweetRGB(object):
+class TweetRGB(SnsAPI):
     api = None
-    status = None
     poll_ref = None
 
-    def __init__(self, api=twitter_api):
-        self.api = api
-        self.status = []
+    @classmethod
+    def new(cls, battle=None, twitter_api=twitter_api):
+        api = cls(battle=battle)
+        api.set_api(twitter_api)
+        commit()
+        return api
 
-    def post(self, msg, img=None):
-        reply_id = self.status[-1].id if len(self.status) > 0 else None
-        self.status.append(self.api.update_status(msg, in_reply_to_status_id=reply_id))
+    def set_api(self, twitter_api=twitter_api):
+        self.api = twitter_api
+
+    def post(self, msg, img=None, reply=True):
+        reply_id = elf.last_status_id() if reply and len(self.status) > 0 else None
+        status = self.api.update_status(msg, in_reply_to_status_id=reply_id)
+        SnsStatus(status_id=status.id, sns_api=self.id)
+        commit()
+        return status.id
 
     def poll(self, a, b, expires=60*60):
         # Twitter does not provide a poll API ¯\_(シ)_/¯
-        pass
+        return
 
 if __name__ == '__main__':
-    bot = TweetRGB()
-    bot.post('ping')
+    from data import init_db, db_session
+    init_db('sns.db')
+    with db_session:
+        bot = TweetRGB.new()
+        bot.post('ping')
