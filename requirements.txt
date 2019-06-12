@@ -2,3 +2,4 @@ pony
 pillow
 Mastodon.py
 tweepy
+psycopg2

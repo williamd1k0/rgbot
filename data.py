@@ -1,5 +1,5 @@
 
-import csv
+import csv, re, os
 from configparser import RawConfigParser
 from datetime import datetime
 from random import random, randint, seed
@@ -257,9 +257,27 @@ class SnsStatus(DB.Entity):
     sns_api = Optional(SnsAPI)
 
 
-def init_db(db_file=':memory:'):
-    DB.bind(provider='sqlite', filename=db_file, create_db=True)
+def init_db(db_name=':memory:', import_data=True, debug=False):
+    sql_debug(debug)
+    if re.match(r':memory:|.*\.(db|sqlite)', db_name):
+        DB.bind(provider='sqlite', filename=db_name, create_db=True)
+    if db_name == 'postgres':
+        config = {
+            'user': os.environ.get('RGB_DBUSER', ''),
+            'password': os.environ.get('RGB_DBPASS', ''),
+            'host': os.environ.get('RGB_DBHOST'),
+            'port': os.environ.get('RGB_DBPORT'),
+            'database': os.environ.get('RGB_DBNAME', ''),
+        }
+        DB.bind(provider='postgres', **config)
+    if db_name == 'mysql':
+        raise Exception(NotImplemented)
     DB.generate_mapping(create_tables=True)
-    with db_session:
-        Move.import_data()
-        Rooster.init_canon()
+    if import_data:
+        with db_session:
+            Move.import_data()
+            Rooster.init_canon()
+
+def clear_db():
+    DB.drop_all_tables(with_all_data=True)
+    print('Database was successfully cleared.')

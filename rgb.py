@@ -97,7 +97,7 @@ class BattleTurns(object):
             current.replenish()
             yield 'REPLENISHED', current
             return
-        move = current.moves.select().random(2)[0]
+        move = choice(tuple(current.moves.select()))
         if move.cost > current.ap:
             current.attack(move)
             yield 'ATK_FAIL', current, other, move
@@ -253,10 +253,14 @@ class SeasonManager(object):
 
 
 def main(args):
-    init_db(args.db)
-    mode = SeasonManager.WAIT if args.wait else SeasonManager.INPUT
-    man = SeasonManager(mode, args.tweet, args.toot, args.tk)
-    man.loop()
+    sql_debug(args.sqldebug)
+    init_db(args.db, not args.clear, args.sqldebug)
+    if args.clear:
+        clear_db()
+    else:
+        mode = SeasonManager.WAIT if args.wait else SeasonManager.INPUT
+        man = SeasonManager(mode, args.tweet, args.toot, args.tk)
+        man.loop()
 
 
 if __name__ == '__main__':
@@ -266,5 +270,7 @@ if __name__ == '__main__':
     argp.add_argument('-T', '--toot', action='store_true', help='enable Mastodon posts')
     argp.add_argument('-t', '--tweet', action='store_true', help='enable Twitter posts (no polls)')
     argp.add_argument('-k', '--tk', action='store_true', help='enable Tk for image debug')
-    argp.add_argument('-d', '--db', type=str, default='data/rgb.db', metavar='*.db', help='set database file')
+    argp.add_argument('-d', '--db', type=str, default='data/rgb.db', metavar='*.db|postgres', help='set database file/provider')
+    argp.add_argument('-D', '--sqldebug', action='store_true', help='enable SQL debug')
+    argp.add_argument('-c', '--clear', action='store_true', help='clear database and exit')
     main(argp.parse_args())
