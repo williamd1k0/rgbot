@@ -261,7 +261,7 @@ def init_db(db_name=':memory:', import_data=True, debug=False):
     sql_debug(debug)
     if re.match(r':memory:|.*\.(db|sqlite)', db_name):
         DB.bind(provider='sqlite', filename=db_name, create_db=True)
-    if db_name == 'postgres':
+    elif db_name == 'postgres':
         config = {
             'user': os.environ.get('RGB_DBUSER', ''),
             'password': os.environ.get('RGB_DBPASS', ''),
@@ -270,8 +270,8 @@ def init_db(db_name=':memory:', import_data=True, debug=False):
             'database': os.environ.get('RGB_DBNAME', ''),
         }
         DB.bind(provider='postgres', **config)
-    if db_name == 'mysql':
-        raise Exception(NotImplemented)
+    else:
+        raise Exception(db_name, NotImplemented)
     DB.generate_mapping(create_tables=True)
     if import_data:
         with db_session:
