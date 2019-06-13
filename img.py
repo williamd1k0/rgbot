@@ -47,6 +47,14 @@ def create_progressbar(current, total=1, mode=FACTOR, width=BAR_WIDTH, anchor=LE
         d.text((txt_x, MARGIN), txt, fill='white', font=fnt)
     return bg
 
+def create_hpbar(current, total=1, mode=FACTOR, width=BAR_WIDTH, anchor=LEFT):
+    # Helper function for HP
+    return create_progressbar(current, total, mode, width, anchor, '#000000', '#FF0000')
+
+def create_apbar(current, total=1, mode=CURRENT_TOTAL, width=BAR_WIDTH, anchor=LEFT):
+    # Helper function for AP
+    return create_progressbar(current, total, mode, width, anchor, '#000000', '#0000FF')
+
 def create_movebar(text, ap=0, color='#000000', path='data/assets/ui/ui_button.png'):
     bar = Image.open(path)
     d = ImageDraw.Draw(bar)
@@ -103,10 +111,10 @@ def create_battle(a:Rooster, b:Rooster, mirror=RIGHT):
         # HP and AP
         anchor = LEFT if r == RIGHT else RIGHT
         hp_x = centers[r]-hp_w//2
-        hp = create_progressbar(rt.hp, rt.HP, width=hp_w, anchor=anchor)
+        hp = create_hpbar(rt.hp, rt.HP, width=hp_w, anchor=anchor)
         bg.paste(hp, (hp_x, hp_y))
         if 1:
-            ap = create_progressbar(rt.ap, rt.AP, mode=CURRENT_TOTAL, width=hp_w, anchor=anchor, fg_color='#0000FF')
+            ap = create_apbar(rt.ap, rt.AP, width=hp_w, anchor=anchor)
             bg.paste(ap, (hp_x, ap_y))
     return bg
 
@@ -156,7 +164,7 @@ if __name__ == '__main__':
                 value = random.random()
             else:
                 value = int(args[0].replace('%', ''))/100
-            tk.show_img(create_progressbar(value, anchor=anchor))
+            tk.show_img(create_hpbar(value, anchor=anchor))
 
         @db_session
         def do_battle(self, args):
