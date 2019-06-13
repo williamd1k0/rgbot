@@ -3,8 +3,8 @@ import os
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from data import Rooster, init_db, db_session
 
-LEFT = 0
-RIGHT = 1
+LEFT, RIGHT = range(2)
+NO_TEXT, FACTOR, CURRENT_TOTAL = range(3)
 BAR_MARGIN = 3
 BAR_WIDTH = 275
 ASSETS_ROOT = 'data/assets/'
@@ -22,7 +22,8 @@ def font(path, size):
     return FONT_CACHE[path][size]
 
 
-def create_hpbar(factor, width=BAR_WIDTH, anchor=LEFT, bg_color='#000000', fg_color='#FF0000'):
+def create_progressbar(current, total=1, mode=FACTOR, width=BAR_WIDTH, anchor=LEFT, bg_color='#000000', fg_color='#FF0000'):
+    factor = current / total
     MARGIN = BAR_MARGIN
     bg_size = width, 30
     bg = Image.new('RGB', bg_size, color=bg_color)
@@ -34,12 +35,16 @@ def create_hpbar(factor, width=BAR_WIDTH, anchor=LEFT, bg_color='#000000', fg_co
         x_pos = MARGIN if anchor == LEFT else width-fg_width+MARGIN
         bg.paste(fg, (x_pos, MARGIN))
 
-    if 1:
+    if mode != NO_TEXT:
         d = ImageDraw.Draw(bg)
-        txt = "%d%%" % (factor*100)
-        txt_size = d.textsize(txt)
+        if mode == FACTOR:
+            txt = "%d%%" % (factor*100)
+        elif mode == CURRENT_TOTAL:
+            txt = "%d/%d" % (current, total)
+        fnt = font(REGULAR_FONT, 12)
+        txt_size = d.textsize(txt, font=fnt)
         txt_x = MARGIN*2 if anchor == LEFT else width-txt_size[0]-MARGIN*2
-        d.text((txt_x, MARGIN*2), txt, fill='white')
+        d.text((txt_x, MARGIN), txt, fill='white', font=fnt)
     return bg
 
 def create_movebar(text, ap=0, color='#000000', path='data/assets/ui/ui_button.png'):
@@ -98,10 +103,10 @@ def create_battle(a:Rooster, b:Rooster, mirror=RIGHT):
         # HP and AP
         anchor = LEFT if r == RIGHT else RIGHT
         hp_x = centers[r]-hp_w//2
-        hp = create_hpbar(rt.hp/rt.HP, width=hp_w, anchor=anchor)
+        hp = create_progressbar(rt.hp, rt.HP, width=hp_w, anchor=anchor)
         bg.paste(hp, (hp_x, hp_y))
         if 1:
-            ap = create_hpbar(rt.ap/rt.AP, width=hp_w, anchor=anchor, fg_color='#0000FF')
+            ap = create_progressbar(rt.ap, rt.AP, mode=CURRENT_TOTAL, width=hp_w, anchor=anchor, fg_color='#0000FF')
             bg.paste(ap, (hp_x, ap_y))
     return bg
 
@@ -151,7 +156,7 @@ if __name__ == '__main__':
                 value = random.random()
             else:
                 value = int(args[0].replace('%', ''))/100
-            tk.show_img(create_hpbar(value, anchor=anchor))
+            tk.show_img(create_progressbar(value, anchor=anchor))
 
         @db_session
         def do_battle(self, args):
