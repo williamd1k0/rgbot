@@ -1,20 +1,20 @@
-[gd_scene load_steps=6 format=2]
+[gd_scene load_steps=7 format=2]
 
-[ext_resource path="res://Battle.gd" type="Script" id=1]
-[ext_resource path="res://ui/ui_background.png" type="Texture" id=2]
-[ext_resource path="res://ui/ui_ground.png" type="Texture" id=3]
-[ext_resource path="res://ui/OpenDyslexic3-Bold.ttf" type="DynamicFontData" id=4]
+[ext_resource path="res://ui/ui_background.png" type="Texture" id=1]
+[ext_resource path="res://ui/ui_ground.png" type="Texture" id=2]
+[ext_resource path="res://ui/ui_hitspark.png" type="Texture" id=3]
+[ext_resource path="res://ui/ui_hitspark_critical.png" type="Texture" id=4]
+[ext_resource path="res://ui/OpenDyslexic3-Bold.ttf" type="DynamicFontData" id=5]
 
 [sub_resource type="DynamicFont" id=1]
 size = 30
 use_mipmaps = true
 use_filter = true
-font_data = ExtResource( 4 )
+font_data = ExtResource( 5 )
 
 [node name="Battle" type="Control"]
 anchor_right = 1.0
 anchor_bottom = 1.0
-script = ExtResource( 1 )
 __meta__ = {
 "_edit_vertical_guides_": [ 270.0 ]
 }
@@ -22,9 +22,10 @@ __meta__ = {
 [node name="Bg" type="TextureRect" parent="."]
 margin_right = 40.0
 margin_bottom = 40.0
-texture = ExtResource( 2 )
+texture = ExtResource( 1 )
 
 [node name="Grounds" type="Control" parent="."]
+editor/display_folded = true
 margin_right = 40.0
 margin_bottom = 40.0
 
@@ -34,7 +35,7 @@ margin_left = 60.0
 margin_top = 400.0
 margin_right = 480.0
 margin_bottom = 463.0
-texture = ExtResource( 3 )
+texture = ExtResource( 2 )
 
 [node name="Right" type="TextureRect" parent="Grounds"]
 anchor_left = 1.0
@@ -44,9 +45,29 @@ margin_left = 680.0
 margin_top = 400.0
 margin_right = 1160.0
 margin_bottom = 463.0
+texture = ExtResource( 2 )
+
+[node name="Hit" type="Control" parent="."]
+margin_left = 270.0
+margin_right = 310.0
+margin_bottom = 40.0
+
+[node name="Normal" type="TextureRect" parent="Hit"]
+margin_left = -60.0
+margin_top = 80.0
+margin_right = 452.0
+margin_bottom = 592.0
 texture = ExtResource( 3 )
 
+[node name="Critical" type="TextureRect" parent="Hit"]
+margin_left = -60.0
+margin_top = 80.0
+margin_right = 452.0
+margin_bottom = 592.0
+texture = ExtResource( 4 )
+
 [node name="Roosters" type="Control" parent="."]
+editor/display_folded = true
 anchor_right = 1.0
 anchor_bottom = 1.0
 

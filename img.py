@@ -1,10 +1,11 @@
 
 import os
-from PIL import Image, ImageDraw, ImageFont, ImageOps
+from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
 from data import Rooster, init_db, db_session
 
 LEFT, RIGHT = range(2)
 NO_TEXT, FACTOR, CURRENT_TOTAL = range(3)
+NO_HIT, HIT, CRITICAL = range(3)
 BAR_MARGIN = 3
 BAR_WIDTH = 275
 ASSETS_ROOT = 'data/assets/'
@@ -69,21 +70,27 @@ def create_movebar(text, ap=0, color='#000000', path='data/assets/ui/ui_button.p
     d.text((bar.width-ap_size[0]-10, bar.height-ap_size[1]-10), ap_txt, font=ap_fnt, fill=color)
     return bar
 
-def create_battle(a:Rooster, b:Rooster, mirror=RIGHT):
+def create_battlebg(lalign=270):
+    bg = Image.open(os.path.join(ASSETS_ROOT, 'ui/ui_background.png'))
+    gr = Image.open(os.path.join(ASSETS_ROOT, 'ui/ui_ground.png')).convert('RGBA')
+    ralign = bg.width - lalign
+    align = lalign, ralign
+    for a in align:
+        bg.paste(gr, (a-gr.width//2, 400), gr)
+    return bg
+
+def create_battle(a:Rooster, b:Rooster, mirror=RIGHT, hit=None, hit_type=NO_HIT, highlight=None):
     X, Y, W, H = range(4)
-    bg = Image.open('data/assets/ui/ui_background.png')
-    gr = Image.open('data/assets/ui/ui_ground.png').convert('RGBA')
-    lcenter = 270
-    rcenter = bg.width - lcenter
-    centers = lcenter, rcenter
-    for c in centers:
-        bg.paste(gr, (c-gr.width//2, 400), gr)
+    lalign = 270
+    bg = create_battlebg()
+    ralign = bg.width - lalign
+    align = lalign, ralign
 
     rt_rect_size = 275, 275
     rt_rect_y = 175
     rt_rect = {
-        LEFT: (centers[LEFT]-rt_rect_size[X]//2, rt_rect_y, *rt_rect_size),
-        RIGHT: (centers[RIGHT]-rt_rect_size[X]//2, rt_rect_y, *rt_rect_size),
+        LEFT: (align[LEFT]-rt_rect_size[X]//2, rt_rect_y, *rt_rect_size),
+        RIGHT: (align[RIGHT]-rt_rect_size[X]//2, rt_rect_y, *rt_rect_size),
     }
     rts = {
         LEFT: a,
@@ -92,6 +99,8 @@ def create_battle(a:Rooster, b:Rooster, mirror=RIGHT):
     hp_y = 72
     ap_y = 110
     hp_w = BAR_WIDTH
+    hit_x = -60
+    hit_y = 80
     for r in rts.keys():
         rt = rts[r]
         # Rooster sprite
@@ -100,21 +109,42 @@ def create_battle(a:Rooster, b:Rooster, mirror=RIGHT):
             im = ImageOps.mirror(im)
         rect = rt_rect[r]
         im.thumbnail(rt_rect[r][2:])
+        mask = im.copy()
+        if hit == rt:
+            im = im.filter(ImageFilter.BLUR)
+        if highlight != None and highlight != rt:
+            im = ImageOps.grayscale(im)
         pos = rect[X] + (rect[W] - im.width)//2, rect[Y] + rect[H] - im.height
-        bg.paste(im, pos, im)
+        bg.paste(im, pos, mask)
+        # Hitspark
+        if hit == rt:
+            hit_im = None
+            if hit_type == HIT:
+                hit_im = Image.open(os.path.join(ASSETS_ROOT, 'ui/ui_hitspark.png')).convert('RGBA')
+            elif hit_type == CRITICAL:
+                hit_im = Image.open(os.path.join(ASSETS_ROOT, 'ui/ui_hitspark_critical.png')).convert('RGBA')
+            if r == LEFT:
+                bg.paste(hit_im,(align[LEFT]+hit_x, hit_y) , hit_im)
+            else:
+                bg.paste(hit_im,(align[RIGHT]-hit_im.width-hit_x, hit_y) , hit_im)
         # Rooster name
         d = ImageDraw.Draw(bg)
         name_fnt = font(BOLD_FONT, 30)
         name_size = d.textsize(rt.name, font=name_fnt)
-        pos = centers[r]-name_size[X]//2, 0
-        d.text(pos, rt.name, font=name_fnt, fill='#000000')
+        pos = align[r]-name_size[X]//2, 0
+        fill = '#00000050' if highlight != None and highlight != rt else '#000000'
+        d.text(pos, rt.name, font=name_fnt, fill=fill)
         # HP and AP
         anchor = LEFT if r == RIGHT else RIGHT
-        hp_x = centers[r]-hp_w//2
+        hp_x = align[r]-hp_w//2
         hp = create_hpbar(rt.hp, rt.HP, width=hp_w, anchor=anchor)
+        if highlight != None and highlight != rt:
+            hp = ImageOps.grayscale(hp)
         bg.paste(hp, (hp_x, hp_y))
         if 1:
             ap = create_apbar(rt.ap, rt.AP, width=hp_w, anchor=anchor)
+            if highlight != None and highlight != rt:
+                ap = ImageOps.grayscale(ap)
             bg.paste(ap, (hp_x, ap_y))
     return bg
 
@@ -170,16 +200,32 @@ if __name__ == '__main__':
         def do_battle(self, args):
             """Generate battle image (needs db session).\n\tUsage: battle [sprite-a] [sprite-b]
             """
+            from random import choice
             args = args.strip().split(' ')
-            a = Rooster.select().random(1)[0]
-            b = Rooster.select().random(1)[0]
+            a, b = Rooster.select().random(2)
             if args[0] != '':
                 a = Rooster.get(sprite=args[0])
                 if len(args) > 1:
                     b = Rooster.get(sprite=args[1])
             a.reset()
             b.reset()
-            tk.show_img(create_battle(a, b))
+            tk.show_img(create_battle(a, b, hit=choice([a, b]), hit_type=choice([HIT, CRITICAL])))
+
+        @db_session
+        def do_start(self, args):
+            """Generate start (presentation) image (needs db session).\n\tUsage: start [sprite-a] [sprite-b]
+            """
+            from random import choice
+            args = args.strip().split(' ')
+            a, b = Rooster.select().random(2)
+            if args[0] != '':
+                a = Rooster.get(sprite=args[0])
+                if len(args) > 1:
+                    b = Rooster.get(sprite=args[1])
+            a.reset()
+            b.reset()
+            tk.show_img(create_battle(a, b, highlight=choice([a, b])))
+
 
     init_db()
     tk.init_tk()
