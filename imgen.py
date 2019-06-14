@@ -23,18 +23,23 @@ def font(path, size):
     return FONT_CACHE[path][size]
 
 
-def create_progressbar(current, total=1, mode=FACTOR, width=BAR_WIDTH, anchor=LEFT, bg_color='#000000', fg_color='#FF0000'):
+def create_progressbar(current, total=1, prev=None, mode=FACTOR, width=BAR_WIDTH, anchor=LEFT, bg_color='#000000', fg_color='#FF0000'):
+    prev = current if prev is None else prev
+    prev_factor = prev / total
     factor = current / total
     MARGIN = BAR_MARGIN
     bg_size = width, 30
     bg = Image.new('RGB', bg_size, color=bg_color)
 
-    fg_width = round(bg_size[0]*factor)
-    if fg_width > 0:
-        fg_size = fg_width-MARGIN*2, bg_size[1]-MARGIN*2
-        fg = Image.new('RGB', fg_size, color=fg_color)
-        x_pos = MARGIN if anchor == LEFT else width-fg_width+MARGIN
-        bg.paste(fg, (x_pos, MARGIN))
+    BAR_PREV = 0
+    for i, f in enumerate((prev_factor, factor)):
+        fg_width = round(bg_size[0]*f)
+        if fg_width > 0:
+            fg_size = max(1, fg_width-MARGIN*2), bg_size[1]-MARGIN*2
+            color = fg_color+'50' if i == BAR_PREV else fg_color
+            fg = Image.new('RGBA', fg_size, color=color)
+            x_pos = MARGIN if anchor == LEFT else width-fg_width+MARGIN
+            bg.paste(fg, (x_pos, MARGIN), fg)
 
     if mode != NO_TEXT:
         d = ImageDraw.Draw(bg)
@@ -48,13 +53,13 @@ def create_progressbar(current, total=1, mode=FACTOR, width=BAR_WIDTH, anchor=LE
         d.text((txt_x, MARGIN), txt, fill='white', font=fnt)
     return bg
 
-def create_hpbar(current, total=1, mode=FACTOR, width=BAR_WIDTH, anchor=LEFT):
+def create_hpbar(current, total=1, prev=None, mode=FACTOR, width=BAR_WIDTH, anchor=LEFT):
     # Helper function for HP
-    return create_progressbar(current, total, mode, width, anchor, '#000000', '#FF0000')
+    return create_progressbar(current, total, prev, mode, width, anchor, '#000000', '#FF0000')
 
-def create_apbar(current, total=1, mode=CURRENT_TOTAL, width=BAR_WIDTH, anchor=LEFT):
+def create_apbar(current, total=1, prev=None, mode=CURRENT_TOTAL, width=BAR_WIDTH, anchor=LEFT):
     # Helper function for AP
-    return create_progressbar(current, total, mode, width, anchor, '#000000', '#0000FF')
+    return create_progressbar(current, total, prev, mode, width, anchor, '#000000', '#0000FF')
 
 def create_movebar(text, ap=0, color='#000000', path='data/assets/ui/ui_button.png'):
     bar = Image.open(path)
@@ -194,7 +199,7 @@ if __name__ == '__main__':
                 value = random.random()
             else:
                 value = int(args[0].replace('%', ''))/100
-            tk.show_img(create_hpbar(value, anchor=anchor))
+            tk.show_img(create_hpbar(value, prev=min(value+0.1, 1), anchor=anchor))
 
         @db_session
         def do_battle(self, args):
