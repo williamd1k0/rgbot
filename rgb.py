@@ -1,7 +1,7 @@
 
 import os, sys, time
 import tk
-import img
+import imgen
 from random import choice, random
 from data import *
 from toot import TootRGB
@@ -201,7 +201,7 @@ class SeasonManager(object):
         if self.tweet:
             self.tweet.poll(*[r.name for r in roosters], poll_msg)
         if self.tk:
-            tk.show_img(img.create_battle(self.turns.a, self.turns.b))
+            tk.show_img(imgen.create_battle(self.turns.a, self.turns.b))
 
     def recover_battle(self):
         # TODO?
@@ -231,7 +231,7 @@ class SeasonManager(object):
                 args = args[0]
             self.post_msg(self.turns.msg(key, args))
         if self.tk:
-            tk.show_img(img.create_battle(self.turns.a, self.turns.b))
+            tk.show_img(imgen.create_battle(self.turns.a, self.turns.b))
 
     def check_state(self):
         if not self.current:

@@ -104,6 +104,7 @@ node_modules/
 # Database
 *.db
 *.sqlite3
+.*.sh
 
 # Godot Stuff
 .import/
