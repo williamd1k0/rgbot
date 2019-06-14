@@ -1,11 +1,18 @@
 
 import os
+from enum import IntEnum
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
 from data import Rooster, init_db, db_session
 
-LEFT, RIGHT = range(2)
-NO_TEXT, FACTOR, CURRENT_TOTAL = range(3)
-NO_HIT, HIT, CRITICAL = range(3)
+class Side(IntEnum):
+    LEFT, RIGHT = range(2)
+
+class BarText(IntEnum):
+    NO_TEXT, FACTOR, CURRENT_TOTAL = range(3)
+
+class HitType(IntEnum):
+    NO_HIT, HIT, CRITICAL = range(3)
+
 BAR_MARGIN = 3
 BAR_WIDTH = 275
 ASSETS_ROOT = 'data/assets/'
@@ -23,7 +30,7 @@ def font(path, size):
     return FONT_CACHE[path][size]
 
 
-def create_progressbar(current, total=1, prev=None, mode=FACTOR, width=BAR_WIDTH, anchor=LEFT, bg_color='#000000', fg_color='#FF0000'):
+def create_progressbar(current, total=1, prev=None, mode=BarText.FACTOR, width=BAR_WIDTH, anchor=Side.LEFT, bg_color='#000000', fg_color='#FF0000'):
     prev = current if prev is None else prev
     prev_factor = prev / total
     factor = current / total
@@ -38,26 +45,26 @@ def create_progressbar(current, total=1, prev=None, mode=FACTOR, width=BAR_WIDTH
             fg_size = max(1, fg_width-MARGIN*2), bg_size[1]-MARGIN*2
             color = fg_color+'50' if i == BAR_PREV else fg_color
             fg = Image.new('RGBA', fg_size, color=color)
-            x_pos = MARGIN if anchor == LEFT else width-fg_width+MARGIN
+            x_pos = MARGIN if anchor == Side.LEFT else width-fg_width+MARGIN
             bg.paste(fg, (x_pos, MARGIN), fg)
 
-    if mode != NO_TEXT:
+    if mode != BarText.NO_TEXT:
         d = ImageDraw.Draw(bg)
-        if mode == FACTOR:
+        if mode == BarText.FACTOR:
             txt = "%d%%" % (factor*100)
-        elif mode == CURRENT_TOTAL:
+        elif mode == BarText.CURRENT_TOTAL:
             txt = "%d/%d" % (current, total)
         fnt = font(REGULAR_FONT, 12)
         txt_size = d.textsize(txt, font=fnt)
-        txt_x = MARGIN*2 if anchor == LEFT else width-txt_size[0]-MARGIN*2
+        txt_x = MARGIN*2 if anchor == Side.LEFT else width-txt_size[0]-MARGIN*2
         d.text((txt_x, MARGIN), txt, fill='white', font=fnt)
     return bg
 
-def create_hpbar(current, total=1, prev=None, mode=FACTOR, width=BAR_WIDTH, anchor=LEFT):
+def create_hpbar(current, total=1, prev=None, mode=BarText.FACTOR, width=BAR_WIDTH, anchor=Side.LEFT):
     # Helper function for HP
     return create_progressbar(current, total, prev, mode, width, anchor, '#000000', '#FF0000')
 
-def create_apbar(current, total=1, prev=None, mode=CURRENT_TOTAL, width=BAR_WIDTH, anchor=LEFT):
+def create_apbar(current, total=1, prev=None, mode=BarText.CURRENT_TOTAL, width=BAR_WIDTH, anchor=Side.LEFT):
     # Helper function for AP
     return create_progressbar(current, total, prev, mode, width, anchor, '#000000', '#0000FF')
 
@@ -84,7 +91,7 @@ def create_battlebg(lalign=270):
         bg.paste(gr, (a-gr.width//2, 400), gr)
     return bg
 
-def create_battle(a:Rooster, b:Rooster, mirror=RIGHT, hit=None, hit_type=NO_HIT, highlight=None):
+def create_battle(a:Rooster, b:Rooster, mirror=Side.RIGHT, hit=None, hit_type=HitType.NO_HIT, highlight=None):
     X, Y, W, H = range(4)
     lalign = 270
     bg = create_battlebg()
@@ -94,12 +101,12 @@ def create_battle(a:Rooster, b:Rooster, mirror=RIGHT, hit=None, hit_type=NO_HIT,
     rt_rect_size = 275, 275
     rt_rect_y = 175
     rt_rect = {
-        LEFT: (align[LEFT]-rt_rect_size[X]//2, rt_rect_y, *rt_rect_size),
-        RIGHT: (align[RIGHT]-rt_rect_size[X]//2, rt_rect_y, *rt_rect_size),
+        Side.LEFT: (align[Side.LEFT]-rt_rect_size[X]//2, rt_rect_y, *rt_rect_size),
+        Side.RIGHT: (align[Side.RIGHT]-rt_rect_size[X]//2, rt_rect_y, *rt_rect_size),
     }
     rts = {
-        LEFT: a,
-        RIGHT: b,
+        Side.LEFT: a,
+        Side.RIGHT: b,
     }
     hp_y = 72
     ap_y = 110
@@ -124,14 +131,14 @@ def create_battle(a:Rooster, b:Rooster, mirror=RIGHT, hit=None, hit_type=NO_HIT,
         # Hitspark
         if hit == rt:
             hit_im = None
-            if hit_type == HIT:
+            if hit_type == HitType.HIT:
                 hit_im = Image.open(os.path.join(ASSETS_ROOT, 'ui/ui_hitspark.png')).convert('RGBA')
-            elif hit_type == CRITICAL:
+            elif hit_type == HitType.CRITICAL:
                 hit_im = Image.open(os.path.join(ASSETS_ROOT, 'ui/ui_hitspark_critical.png')).convert('RGBA')
-            if r == LEFT:
-                bg.paste(hit_im,(align[LEFT]+hit_x, hit_y) , hit_im)
+            if r == Side.LEFT:
+                bg.paste(hit_im,(align[Side.LEFT]+hit_x, hit_y) , hit_im)
             else:
-                bg.paste(hit_im,(align[RIGHT]-hit_im.width-hit_x, hit_y) , hit_im)
+                bg.paste(hit_im,(align[Side.RIGHT]-hit_im.width-hit_x, hit_y) , hit_im)
         # Rooster name
         d = ImageDraw.Draw(bg)
         name_fnt = font(BOLD_FONT, 30)
@@ -140,7 +147,7 @@ def create_battle(a:Rooster, b:Rooster, mirror=RIGHT, hit=None, hit_type=NO_HIT,
         fill = '#00000050' if highlight != None and highlight != rt else '#000000'
         d.text(pos, rt.name, font=name_fnt, fill=fill)
         # HP and AP
-        anchor = LEFT if r == RIGHT else RIGHT
+        anchor = Side.LEFT if r == Side.RIGHT else Side.RIGHT
         hp_x = align[r]-hp_w//2
         hp = create_hpbar(rt.hp, rt.HP, width=hp_w, anchor=anchor)
         if highlight != None and highlight != rt:
@@ -188,7 +195,7 @@ if __name__ == '__main__':
             import random
             args = args.strip().split(' ')
             anchors = {
-                'left': LEFT, 'right': RIGHT
+                'left': Side.LEFT, 'right': Side.RIGHT
             }
             anchor = random.choice(list(anchors.values()))
             if len(args) > 1:
@@ -214,7 +221,7 @@ if __name__ == '__main__':
                     b = Rooster.get(sprite=args[1])
             a.reset()
             b.reset()
-            tk.show_img(create_battle(a, b, hit=choice([a, b]), hit_type=choice([HIT, CRITICAL])))
+            tk.show_img(create_battle(a, b, hit=choice([a, b]), hit_type=choice([HitType.HIT, HitType.CRITICAL])))
 
         @db_session
         def do_start(self, args):
