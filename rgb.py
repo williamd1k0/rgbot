@@ -176,12 +176,16 @@ class SeasonManager(object):
             elif state == self.DONE:
                 self.season_done()
             sys.stdout.flush()
-            if self.mode == self.WAIT:
-                time.sleep(CONFIGS['battle']['event-interval'])
-            elif self.mode == self.INPUT:
-                input()
-                os.system('cls')
-                os.system('clear')
+            self.interaction()
+
+    def interaction(self, override_time=None):
+        if self.mode == self.WAIT:
+            t = override_time if override_time else CONFIGS['battle']['event-interval']
+            time.sleep(t)
+        elif self.mode == self.INPUT:
+            input()
+            os.system('cls')
+            os.system('clear')
 
     def new_battle(self):
         # TODO: rooster selection stuff
@@ -193,18 +197,24 @@ class SeasonManager(object):
         if self.tweet:
             self.turns.tweet = TweetRGB.new(battle)
         self.post_msg(self.turns.msg('new'))
+        if self.tk:
+            tk.show_img(imgen.create_battle(self.turns.a, self.turns.b))
+            self.interaction(5)
         self.post_msg(self.turns.msg('a-stats'))
+        if self.tk:
+            tk.show_img(imgen.create_highlight(self.turns.a, self.turns.b, self.turns.a))
+            self.interaction(5)
         self.post_msg(self.turns.msg('b-stats'))
+        if self.tk:
+            tk.show_img(imgen.create_highlight(self.turns.a, self.turns.b, self.turns.b))
+            self.interaction(5)
         poll_msg = TURN_MSG['POLL']
         if self.toot:
             self.toot.poll(*[r.name for r in roosters], poll_msg)
         if self.tweet:
             self.tweet.poll(*[r.name for r in roosters], poll_msg)
-        if self.tk:
-            tk.show_img(imgen.create_battle(self.turns.a, self.turns.b))
 
     def recover_battle(self):
-        # TODO?
         bt = Battle.last_battle()
         if not bt or bt.winner:
             return
@@ -221,6 +231,7 @@ class SeasonManager(object):
             self.toot
 
     def next_turn(self):
+        # TODO: Check states and merge specific messages
         states = self.turns.next()
         for s in states:
             key = s[0]

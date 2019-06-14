@@ -69,7 +69,7 @@ def create_hpbar(current, total=1, prev=None, mode=BarText.NO_TEXT, anchor=Side.
 
 def create_apbar(current, total=1, prev=None, mode=BarText.CURRENT_TOTAL, anchor=Side.LEFT):
     # Helper function for AP
-    return create_progressbar2(current, total, prev, mode, anchor, '#0000FF50', '#0000FF')
+    return create_progressbar2(current, total, prev, mode, anchor, '#0000FF', '#0000FF50')
 
 def create_movebar(text, ap=0, color='#000000', path='data/assets/ui/ui_button.png'):
     bar = Image.open(path)
@@ -151,17 +151,19 @@ def create_battle(a:Rooster, b:Rooster, mirror=Side.RIGHT, hit=None, hit_type=Hi
         # HP and AP
         anchor = Side.LEFT if r == Side.RIGHT else Side.RIGHT
         hp_x = align[r]-BAR_WIDTH//2
-        hp = create_hpbar(rt.hp, rt.HP, anchor=anchor)
+        hp = create_hpbar(rt.hp, rt.HP, rt.hp_prev, anchor=anchor)
         if highlight != None and highlight != rt:
             hp = ImageOps.grayscale(hp)
         bg.paste(hp, (hp_x, hp_y))
         if 1:
-            ap = create_apbar(rt.ap, rt.AP, anchor=anchor)
+            ap = create_apbar(rt.ap, rt.AP, rt.ap_prev, anchor=anchor)
             if highlight != None and highlight != rt:
                 ap = ImageOps.grayscale(ap)
             bg.paste(ap, (hp_x, ap_y))
     return bg
 
+def create_highlight(a:Rooster, b:Rooster, highlight=None):
+    return create_battle(a, b, highlight=highlight)
 
 if __name__ == '__main__':
     from cmd import Cmd
@@ -238,8 +240,7 @@ if __name__ == '__main__':
                     b = Rooster.get(sprite=args[1])
             a.reset()
             b.reset()
-            tk.show_img(create_battle(a, b, highlight=choice([a, b])))
-
+            tk.show_img(create_highlight(a, b, choice([a, b])))
 
     init_db()
     tk.init_tk()

@@ -86,8 +86,10 @@ class Rooster(DB.Entity):
     sprite = Optional(str)
     HP = Required(int, column='hp_total', default=0)  # Total HP
     hp = Optional(int, column='hp_current')  # Current HP
+    hp_prev = Optional(int, column='hp_prev')  # Previous HP
     AP = Required(int, column='ap_total', default=0)  # Total AP
     ap = Optional(int, column='ap_current')  # Current AP
+    ap_prev = Optional(int, column='ap_prev')  # Previous AP
     is_canon = Optional(bool, default=False)
     moves = Set('Move')
     battles = Set('Battle', reverse='roosters')
@@ -140,18 +142,23 @@ class Rooster(DB.Entity):
         self.replenish()
 
     def replenish(self):
-        self.ap = self.AP
+        self.ap_prev = self.ap
+        self.ap = self.ap_prev = self.AP
         commit()
     
     def revive(self):
-        self.hp = self.HP
+        self.hp = self.hp_prev = self.HP
         commit()
 
     def damage(self, d):
+        self.ap_prev = self.ap
+        self.hp_prev = self.hp
         self.hp -= int(d)
         commit()
 
     def attack(self, move):
+        self.hp_prev = self.hp
+        self.ap_prev = self.ap
         self.ap -= int(move.cost)
         commit()
 
