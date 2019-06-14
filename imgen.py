@@ -30,7 +30,7 @@ def font(path, size):
     return FONT_CACHE[path][size]
 
 
-def create_progressbar(current, total=1, prev=None, mode=BarText.FACTOR, width=BAR_WIDTH, anchor=Side.LEFT, bg_color='#000000', fg_color='#FF0000'):
+def create_progressbar(current, total=1, prev=None, mode=BarText.FACTOR, width=BAR_WIDTH, anchor=Side.LEFT, bg_color='#000000', fg_color='#FF000050', prev_color="#FF0000"):
     prev = current if prev is None else prev
     prev_factor = prev / total
     factor = current / total
@@ -43,7 +43,7 @@ def create_progressbar(current, total=1, prev=None, mode=BarText.FACTOR, width=B
         fg_width = round(bg_size[0]*f)
         if fg_width > 0:
             fg_size = max(1, fg_width-MARGIN*2), bg_size[1]-MARGIN*2
-            color = fg_color+'50' if i == BAR_PREV else fg_color
+            color = prev_color if i == BAR_PREV else fg_color
             fg = Image.new('RGBA', fg_size, color=color)
             x_pos = MARGIN if anchor == Side.LEFT else width-fg_width+MARGIN
             bg.paste(fg, (x_pos, MARGIN), fg)
@@ -60,13 +60,16 @@ def create_progressbar(current, total=1, prev=None, mode=BarText.FACTOR, width=B
         d.text((txt_x, MARGIN), txt, fill='white', font=fnt)
     return bg
 
-def create_hpbar(current, total=1, prev=None, mode=BarText.FACTOR, width=BAR_WIDTH, anchor=Side.LEFT):
-    # Helper function for HP
-    return create_progressbar(current, total, prev, mode, width, anchor, '#000000', '#FF0000')
+def create_progressbar2(current, total=1, prev=None, mode=BarText.FACTOR, anchor=Side.LEFT, fg_color='#FF000050', prev_color="#FF0000"):
+    return create_progressbar(current, total, prev, mode, BAR_WIDTH, anchor, '#000000', fg_color, prev_color)
 
-def create_apbar(current, total=1, prev=None, mode=BarText.CURRENT_TOTAL, width=BAR_WIDTH, anchor=Side.LEFT):
+def create_hpbar(current, total=1, prev=None, mode=BarText.NO_TEXT, anchor=Side.LEFT):
+    # Helper function for HP
+    return create_progressbar2(current, total, prev, mode, anchor, '#FFFF00', '#FF0000')
+
+def create_apbar(current, total=1, prev=None, mode=BarText.CURRENT_TOTAL, anchor=Side.LEFT):
     # Helper function for AP
-    return create_progressbar(current, total, prev, mode, width, anchor, '#000000', '#0000FF')
+    return create_progressbar2(current, total, prev, mode, anchor, '#0000FF50', '#0000FF')
 
 def create_movebar(text, ap=0, color='#000000', path='data/assets/ui/ui_button.png'):
     bar = Image.open(path)
@@ -110,7 +113,6 @@ def create_battle(a:Rooster, b:Rooster, mirror=Side.RIGHT, hit=None, hit_type=Hi
     }
     hp_y = 72
     ap_y = 110
-    hp_w = BAR_WIDTH
     hit_x = -60
     hit_y = 80
     for r in rts.keys():
@@ -148,13 +150,13 @@ def create_battle(a:Rooster, b:Rooster, mirror=Side.RIGHT, hit=None, hit_type=Hi
         d.text(pos, rt.name, font=name_fnt, fill=fill)
         # HP and AP
         anchor = Side.LEFT if r == Side.RIGHT else Side.RIGHT
-        hp_x = align[r]-hp_w//2
-        hp = create_hpbar(rt.hp, rt.HP, width=hp_w, anchor=anchor)
+        hp_x = align[r]-BAR_WIDTH//2
+        hp = create_hpbar(rt.hp, rt.HP, anchor=anchor)
         if highlight != None and highlight != rt:
             hp = ImageOps.grayscale(hp)
         bg.paste(hp, (hp_x, hp_y))
         if 1:
-            ap = create_apbar(rt.ap, rt.AP, width=hp_w, anchor=anchor)
+            ap = create_apbar(rt.ap, rt.AP, anchor=anchor)
             if highlight != None and highlight != rt:
                 ap = ImageOps.grayscale(ap)
             bg.paste(ap, (hp_x, ap_y))
