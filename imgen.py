@@ -29,6 +29,21 @@ def font(path, size):
         FONT_CACHE[path][size] = ImageFont.truetype(path, size)
     return FONT_CACHE[path][size]
 
+def uvfilter(img, flt):
+    # resize to save calculations on image iteration
+    flt = flt.resize(img.size, Image.ANTIALIAS)
+    src = img.copy()
+    srcd = src.load()
+    imgd = img.load()
+    uvd = flt.load()
+    for x in range(src.width):
+        for y in range(src.height):
+            new = uvd[x, y]
+            imgd[x, y] = srcd[new[0]*src.width/256, new[1]*src.height/256]
+    return img
+
+def distort_sprite(sprite, mask=os.path.join(ASSETS_ROOT, 'ui/distort_mask.png')):
+    return uvfilter(Image.open(os.path.join(ROOSTERS_ROOT, sprite)).convert('RGBA'), Image.open(mask))
 
 def create_progressbar(current, total=1, prev=None, mode=BarText.FACTOR, width=BAR_WIDTH, anchor=Side.LEFT, bg_color='#000000', fg_color='#FF000050', prev_color="#FF0000"):
     prev = current if prev is None else prev
@@ -241,6 +256,18 @@ if __name__ == '__main__':
             a.reset()
             b.reset()
             tk.show_img(create_highlight(a, b, choice([a, b])))
+        
+        @db_session
+        def do_distort(self, args):
+            """Distort sprite using the default mask.\n\tUsage: distort [sprite]
+            """
+            sprite = ''
+            args = args.strip().split(' ')
+            if args[0] != '':
+                sprite = args[0]
+            else:
+                sprite = Rooster.select().random(1)[0].sprite
+            tk.show_img(distort_sprite(sprite))
 
     init_db()
     tk.init_tk()
