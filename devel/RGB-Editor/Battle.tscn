@@ -1,10 +1,11 @@
-[gd_scene load_steps=7 format=2]
+[gd_scene load_steps=8 format=2]
 
 [ext_resource path="res://ui/ui_background.png" type="Texture" id=1]
 [ext_resource path="res://ui/ui_ground.png" type="Texture" id=2]
 [ext_resource path="res://ui/ui_hitspark.png" type="Texture" id=3]
 [ext_resource path="res://ui/ui_hitspark_critical.png" type="Texture" id=4]
 [ext_resource path="res://ui/OpenDyslexic3-Bold.ttf" type="DynamicFontData" id=5]
+[ext_resource path="res://ui/victory.png" type="Texture" id=6]
 
 [sub_resource type="DynamicFont" id=1]
 size = 30
@@ -112,4 +113,17 @@ margin_top = 110.0
 margin_right = 407.0
 margin_bottom = 140.0
 color = Color( 0, 0.0392157, 1, 1 )
+
+[node name="Winner" type="Control" parent="."]
+margin_right = 40.0
+margin_bottom = 40.0
+
+[node name="TextureRect" type="TextureRect" parent="Winner"]
+margin_left = 80.0
+margin_top = 310.0
+margin_right = 460.0
+margin_bottom = 690.0
+texture = ExtResource( 6 )
+expand = true
+stretch_mode = 6
 

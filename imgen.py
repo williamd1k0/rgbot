@@ -1,6 +1,6 @@
 
 import os
-from enum import IntEnum
+from enum import IntEnum, IntFlag
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
 from data import Rooster, init_db, db_session
 
@@ -11,7 +11,11 @@ class BarText(IntEnum):
     NO_TEXT, FACTOR, CURRENT_TOTAL = range(3)
 
 class HitType(IntEnum):
-    NO_HIT, HIT, CRITICAL = range(3)
+    HIT, CRITICAL = range(2)
+
+class BattleFlag(IntFlag):
+    NONE = 0
+    HIT, HIGHLIGHT, DONE = (1<<n for n in range(3))
 
 BAR_MARGIN = 3
 BAR_WIDTH = 275
@@ -44,6 +48,9 @@ def uvfilter(img, flt):
 
 def distort_sprite(sprite, mask=os.path.join(ASSETS_ROOT, 'ui/distort_mask.png')):
     return uvfilter(Image.open(os.path.join(ROOSTERS_ROOT, sprite)).convert('RGBA'), Image.open(mask))
+
+def distort_img(img, mask=os.path.join(ASSETS_ROOT, 'ui/distort_mask.png')):
+    return uvfilter(img, Image.open(mask))
 
 def create_progressbar(current, total=1, prev=None, mode=BarText.FACTOR, width=BAR_WIDTH, anchor=Side.LEFT, bg_color='#000000', fg_color='#FF000050', prev_color="#FF0000"):
     prev = current if prev is None else prev
@@ -109,7 +116,7 @@ def create_battlebg(lalign=270):
         bg.paste(gr, (a-gr.width//2, 400), gr)
     return bg
 
-def create_battle(a:Rooster, b:Rooster, mirror=Side.RIGHT, hit=None, hit_type=HitType.NO_HIT, highlight=None):
+def create_battle(a:Rooster, b:Rooster, mirror=Side.RIGHT, flags=BattleFlag.NONE, data={}): # hit=None, hit_type=HitType.NO_HIT, highlight=None):
     X, Y, W, H = range(4)
     lalign = 270
     bg = create_battlebg()
@@ -130,6 +137,9 @@ def create_battle(a:Rooster, b:Rooster, mirror=Side.RIGHT, hit=None, hit_type=Hi
     ap_y = 110
     hit_x = -60
     hit_y = 80
+    highlight = data.get('highlight') if flags & BattleFlag.HIGHLIGHT else None
+    hit = data.get('hit') if flags & BattleFlag.HIT else None
+    winner, loser = (data.get('winner'), data.get('loser')) if flags & BattleFlag.DONE else (None, None)
     for r in rts.keys():
         rt = rts[r]
         # Rooster sprite
@@ -139,14 +149,19 @@ def create_battle(a:Rooster, b:Rooster, mirror=Side.RIGHT, hit=None, hit_type=Hi
         rect = rt_rect[r]
         im.thumbnail(rt_rect[r][2:])
         mask = im.copy()
-        if hit == rt:
+        if rt == loser:
+            im = distort_img(im)
+            mask = im.copy()
+        elif hit == rt:
             im = im.filter(ImageFilter.BLUR)
-        if highlight != None and highlight != rt:
+            mask = im.copy()
+        elif highlight != None and highlight != rt:
             im = ImageOps.grayscale(im)
         pos = rect[X] + (rect[W] - im.width)//2, rect[Y] + rect[H] - im.height
         bg.paste(im, pos, mask)
         # Hitspark
         if hit == rt:
+            hit_type = data.get('hit_type')
             hit_im = None
             if hit_type == HitType.HIT:
                 hit_im = Image.open(os.path.join(ASSETS_ROOT, 'ui/ui_hitspark.png')).convert('RGBA')
@@ -170,22 +185,37 @@ def create_battle(a:Rooster, b:Rooster, mirror=Side.RIGHT, hit=None, hit_type=Hi
         if highlight != None and highlight != rt:
             hp = ImageOps.grayscale(hp)
         bg.paste(hp, (hp_x, hp_y))
-        if 1:
-            ap = create_apbar(rt.ap, rt.AP, rt.ap_prev, anchor=anchor)
-            if highlight != None and highlight != rt:
-                ap = ImageOps.grayscale(ap)
-            bg.paste(ap, (hp_x, ap_y))
+        ap = create_apbar(rt.ap, rt.AP, rt.ap_prev, anchor=anchor)
+        if highlight != None and highlight != rt:
+            ap = ImageOps.grayscale(ap)
+        bg.paste(ap, (hp_x, ap_y))
+        
+        # Winner stamp
+        if rt == winner:
+            vic = Image.open(os.path.join(ASSETS_ROOT, 'ui/victory.png')).convert('RGBA')
+            vic_x = align[r]-vic.width//2
+            vic_y = 310
+            bg.paste(vic, (vic_x, vic_y), vic)
     return bg
 
 def create_highlight(a:Rooster, b:Rooster, highlight=None):
-    return create_battle(a, b, highlight=highlight)
+    return create_battle(a, b, flags=BattleFlag.HIGHLIGHT, data={'highlight': highlight})
+
+def create_battle_hit(a:Rooster, b:Rooster, hit=None, hit_type=None, done=False):
+    flag = BattleFlag.HIT
+    data = {'hit': hit, 'hit_type': hit_type}
+    if done:
+        flag |= BattleFlag.DONE
+        data['loser'] = hit
+        data['winner'] = a if hit != a else b
+    return create_battle(a, b, flags=flag, data=data)
 
 if __name__ == '__main__':
     from cmd import Cmd
     import tk
 
     class ImagePreviewCmd(Cmd):
-        prompt = 'gen> '
+        prompt = 'imgen> '
         intro = "Image generation preview. Type help/? to list commands"
 
         def do_exit(self, inp):
@@ -228,6 +258,18 @@ if __name__ == '__main__':
             tk.show_img(create_hpbar(value, prev=min(value+0.1, 1), anchor=anchor))
 
         @db_session
+        def do_distort(self, args):
+            """Distort sprite using the default mask (needs db session).\n\tUsage: distort [sprite]
+            """
+            sprite = ''
+            args = args.strip().split(' ')
+            if args[0] != '':
+                sprite = args[0]
+            else:
+                sprite = Rooster.select().random(1)[0].sprite
+            tk.show_img(distort_sprite(sprite))
+
+        @db_session
         def do_battle(self, args):
             """Generate battle image (needs db session).\n\tUsage: battle [sprite-a] [sprite-b]
             """
@@ -240,11 +282,35 @@ if __name__ == '__main__':
                     b = Rooster.get(sprite=args[1])
             a.reset()
             b.reset()
-            tk.show_img(create_battle(a, b, hit=choice([a, b]), hit_type=choice([HitType.HIT, HitType.CRITICAL])))
+            data = {
+                'hit': choice([a, b]),
+                'hit_type': choice([HitType.HIT, HitType.CRITICAL]),
+            }
+            tk.show_img(create_battle_hit(a, b, **data))
 
         @db_session
-        def do_start(self, args):
-            """Generate start (presentation) image (needs db session).\n\tUsage: start [sprite-a] [sprite-b]
+        def do_win(self, args):
+            """Generate battle end image (needs db session).\n\tUsage: battle [sprite-a] [sprite-b]
+            """
+            from random import choice
+            args = args.strip().split(' ')
+            a, b = Rooster.select().random(2)
+            if args[0] != '':
+                a = Rooster.get(sprite=args[0])
+                if len(args) > 1:
+                    b = Rooster.get(sprite=args[1])
+            a.reset()
+            b.reset()
+            kargs = {
+                'hit': choice([a, b]),
+                'hit_type': choice([HitType.HIT, HitType.CRITICAL]),
+                'done': True,
+            }
+            tk.show_img(create_battle_hit(a, b, **kargs))
+
+        @db_session
+        def do_highlight(self, args):
+            """Generate presentation image (needs db session).\n\tUsage: highlight [sprite-a] [sprite-b]
             """
             from random import choice
             args = args.strip().split(' ')
@@ -256,18 +322,6 @@ if __name__ == '__main__':
             a.reset()
             b.reset()
             tk.show_img(create_highlight(a, b, choice([a, b])))
-        
-        @db_session
-        def do_distort(self, args):
-            """Distort sprite using the default mask.\n\tUsage: distort [sprite]
-            """
-            sprite = ''
-            args = args.strip().split(' ')
-            if args[0] != '':
-                sprite = args[0]
-            else:
-                sprite = Rooster.select().random(1)[0].sprite
-            tk.show_img(distort_sprite(sprite))
 
     init_db()
     tk.init_tk()
