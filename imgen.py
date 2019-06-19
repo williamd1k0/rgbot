@@ -128,7 +128,7 @@ def create_movesgrid_img(moves, margin=(10, 10), grid=(2, 2), mask=None):
             i += 1
     return bg
 
-def create_movesgrid(moves, highlight=None, scale=1.0, margin=(10, 10)):
+def create_movesgrid(moves, highlight=..., scale=1.0, margin=(10, 10)):
     # moves: Move[]
     moves_img = []
     mask = None
@@ -136,7 +136,7 @@ def create_movesgrid(moves, highlight=None, scale=1.0, margin=(10, 10)):
         mv_im = create_movebtn(mv.name, mv.cost, scale=scale)
         if not mask:
             mask = mv_im.copy()
-        if highlight != None and highlight != mv:
+        if highlight is None or (highlight is not ... and highlight != mv):
             mv_im = ImageOps.grayscale(mv_im)
         moves_img.append(mv_im)
     return create_movesgrid_img(moves_img, margin, mask=mask)
@@ -226,10 +226,10 @@ def create_battle(a:Rooster, b:Rooster, mirror=Side.RIGHT, flags=BattleFlag.NONE
         
         # Attack btns
         mv_scale = 0.5
-        mv_highlight = None # None will highlight all moves by default
+        mv_highlight = ... # Ellipsis will highlight all moves by default
         if hit == rt or (highlight != None and highlight != rt):
-            mv_highlight = ... # Ellipsis will grayscale all moves
-        elif highlight is None:
+            mv_highlight = None # None will grayscale all moves
+        elif highlight is None and hit:
             mv_highlight = data.get('attack')
         moves = create_movesgrid(list(rt.moves.select()), mv_highlight, mv_scale)
         mv_pos = align[r]-moves.width//2, bg.height-moves.height-10
