@@ -184,7 +184,7 @@ def create_battle(a:Rooster, b:Rooster, mirror=Side.RIGHT, flags=BattleFlag.NONE
         im.thumbnail(rt_rect[r][2:])
         mask = im.copy()
         if rt == loser:
-            im = distort_img(im)
+            im = distort_img(im, winner.mask)
             mask = im.copy()
         elif hit == rt:
             im = im.filter(ImageFilter.BLUR)
