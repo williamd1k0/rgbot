@@ -1,7 +1,7 @@
 name,damage,cost,message
-Intimidate,1,1,{a} tentou intimidar {b}
-Tackle,2,2,{a} foi com tudo no {b}
-Scratch,3,4,{a} tentou arranhar {b} com as garra
-Peck,6,7,{a} tentou bicar {b} com força
-Jump attack,9,12,{a} pulou em cima de {b} para atacar
-Talon attack,12,20,{a} tentou atacar {b} com suas esporas afiadas
+Intimidar,1,1,{a} tentou intimidar {b}
+Empurrão,2,2,{a} foi com tudo no {b}
+Arranhada,3,4,{a} tentou arranhar {b} com as garra
+Bicada,6,7,{a} tentou bicar {b} com força
+Salto,9,12,{a} pulou em cima de {b} para atacar
+Espora,12,20,{a} tentou atacar {b} com suas esporas afiadas

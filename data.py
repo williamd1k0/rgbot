@@ -44,13 +44,13 @@ def load_configs(path='data/config.ini'):
     }
 
 def load_moves_data(path='data/moves.csv'):
-    moves = {}
+    moves = []
     with open(path, 'r', encoding='utf-8') as data:
         csv_data = csv.DictReader(data)
         for row in csv_data:
-            moves[row['name']] = [
-                int(row['damage']), int(row['cost']), row['message']
-            ]
+            moves.append([
+                row['name'], int(row['damage']), int(row['cost']), row['message']
+            ])
     data.close()
     return moves
 
@@ -178,14 +178,15 @@ class Move(DB.Entity):
 
     @classmethod
     def import_data(cls):
-        for k, mv in ROOSTER_MOVES.items():
-            move = cls.get(name=k)
+        for i, mv in enumerate(ROOSTER_MOVES):
+            move = cls.get(id=i+1)
             if move:
-                move.damage = mv[0]
-                move.cost = mv[1]
+                move.name = mv[0]
+                move.damage = mv[1]
+                move.cost = mv[2]
             else:
-                move = cls(name=k, damage=mv[0], cost=mv[1])
-            move.msg = mv[2]
+                move = cls(name=mv[0], damage=mv[1], cost=mv[2])
+            move.msg = mv[3]
         commit()
 
 class Battle(DB.Entity):
