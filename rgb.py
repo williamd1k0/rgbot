@@ -108,7 +108,7 @@ class BattleTurns(object):
             critical = random() <= CONFIGS['battle']['critical-chance']
             if critical:
                 yield 'ATK_CRITICAL', current, other, move
-                dmg *= CONFIGS['battle']['critical-factor']
+                dmg = int(dmg*CONFIGS['battle']['critical-factor'])
             else:
                 yield 'ATK_HIT', current, other, move
             other.damage(dmg)
@@ -228,17 +228,47 @@ class SeasonManager(object):
 
     def next_turn(self):
         # TODO: Check states and merge specific messages
+        # 'REPLENISHED'
+        # 'ATK_FAIL'
+        # 'ATK_CRITICAL'
+        # 'ATK_HIT'
+        # 'DAMAGE'
+        # 'BONUS'
+        # 'KO'
+        # create_highlight(a:Rooster, b:Rooster, highlight=None)
+        # create_battle_hit(a:Rooster, b:Rooster, hit=None, hit_type=None, attack=None, done=False)
         states = self.turns.next()
+        done = False
+        hit = None
+        hit_type = None
+        attack = None
+        queued_msg = ''
+        a, b = self.turns.a, self.turns.b
+        hit_types = {
+            'ATK_HIT': imgen.HitType.HIT,
+            'ATK_CRITICAL': imgen.HitType.CRITICAL,
+        }
         for s in states:
             key = s[0]
             args = s[1:]
-            if key == 'KO':
-                done = True
             if len(args) == 1:
                 args = args[0]
-            self.post_msg(self.turns.msg(key, args))
-        if self.tk:
-            tk.show_img(imgen.create_battle(self.turns.a, self.turns.b))
+            if key == 'REPLENISHED':
+                msg = self.turns.msg(key, args)
+                im = imgen.create_highlight(a, b, highlight=args)
+                self.post_msg(msg, im)
+            if key in ('ATK_FAIL', 'ATK_HIT', 'ATK_CRITICAL'):
+                attack = args[2]
+                if key in ('ATK_HIT', 'ATK_CRITICAL'):
+                    hit = args[1]
+                    hit_type = hit_types[key]
+            if key == 'KO':
+                done = True
+            else:
+                self.post_msg(self.turns.msg(key, args))
+        if attack:
+            im = imgen.create_battle_hit(a, b, hit=hit, hit_type=hit_type, attack=attack, done=done)
+        self.post_msg('[TODO] Check states and merge specific messages', im)
 
     def check_state(self):
         if not self.current:
