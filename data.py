@@ -144,8 +144,8 @@ class Rooster(DB.Entity):
         self.replenish()
 
     def replenish(self):
-        self.ap_prev = self.ap
-        self.ap = self.ap_prev = self.AP
+        self.ap = self.AP
+        self.ap_prev = self.AP
         commit()
     
     def revive(self):

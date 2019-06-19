@@ -114,6 +114,7 @@ class BattleTurns(object):
             other.damage(dmg)
             yield 'DAMAGE', other, dmg
             if current.ap == 0:
+                current.replenish()
                 yield 'BONUS', current
             if other.is_dead():
                 self.battle.ko(current)
