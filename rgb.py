@@ -143,16 +143,19 @@ class SeasonManager(object):
             self.tk = tk_
             tk.init_tk()
 
-    def post_msg(self, msg, title=None, subtitle='', battle=True, reply=True):
+    def post_msg(self, msg, img=None, title=None, subtitle='', battle=True, reply=True):
         toot = self.get_toot(battle)
         if toot:
-            toot.post(msg, reply=reply)
+            toot.post(msg, img, reply=reply)
         tweet = self.get_tweet(battle)
         if tweet:
-            tweet.post(msg, reply=reply)
+            tweet.post(msg, img, reply=reply)
         if title:
             msg = '\n\t[%s] %s\n%s' % title, subtitle, msg
         print(msg)
+        if self.tk and img:
+            tk.show_img(img)
+            self.interaction(5)
 
     def get_toot(self, battle=True):
         return self.toot if not battle else self.turns.toot if self.turns else None
@@ -196,18 +199,11 @@ class SeasonManager(object):
             self.turns.toot = TootRGB.new(battle)
         if self.tweet:
             self.turns.tweet = TweetRGB.new(battle)
-        self.post_msg(self.turns.msg('new'))
-        if self.tk:
-            tk.show_img(imgen.create_battle(self.turns.a, self.turns.b))
-            self.interaction(5)
-        self.post_msg(self.turns.msg('a-stats'))
-        if self.tk:
-            tk.show_img(imgen.create_highlight(self.turns.a, self.turns.b, self.turns.a))
-            self.interaction(5)
-        self.post_msg(self.turns.msg('b-stats'))
-        if self.tk:
-            tk.show_img(imgen.create_highlight(self.turns.a, self.turns.b, self.turns.b))
-            self.interaction(5)
+        self.post_msg(self.turns.msg('new'), imgen.create_battle(self.turns.a, self.turns.b))
+
+        self.post_msg(self.turns.msg('a-stats'), imgen.create_highlight(self.turns.a, self.turns.b, self.turns.a))
+        self.post_msg(self.turns.msg('b-stats'), imgen.create_highlight(self.turns.a, self.turns.b, self.turns.b))
+
         poll_msg = TURN_MSG['POLL']
         if self.toot:
             self.toot.poll(*[r.name for r in roosters], poll_msg)

@@ -68,7 +68,7 @@ def load_canon_roosters(path='data/roosters-canon.csv'):
     with open(path, 'r', encoding='utf-8') as data:
         csv_data = csv.DictReader(data)
         for row in csv_data:
-            roosters.append([row['name'], row['image']])
+            roosters.append([row['name'], row['image'], row['mask'] or 'distort-mask.png'])
     data.close()
     return roosters
 
@@ -84,6 +84,7 @@ class Rooster(DB.Entity):
     created = Optional(datetime, default=lambda: datetime.now())
     name = Optional(str, unique=True, default='Unnamed')
     sprite = Optional(str)
+    mask = Optional(str)
     HP = Required(int, column='hp_total', default=0)  # Total HP
     hp = Optional(int, column='hp_current')  # Current HP
     hp_prev = Optional(int, column='hp_prev')  # Previous HP
@@ -102,6 +103,7 @@ class Rooster(DB.Entity):
             data = {
                 'name': r[0],
                 'sprite': r[1],
+                'mask': r[2],
                 'HP': randint(*CONFIGS['gen']['hp']),
                 'AP': randint(*CONFIGS['gen']['ap']),
                 'moves': Move.select().random(CONFIGS['gen']['moves']),

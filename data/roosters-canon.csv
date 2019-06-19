@@ -1,26 +1,26 @@
-name,image
-Galo de Kalsa,galo-de-kalsa.png
-Galinha Pintadinha,galinha-pintadinha.png
-Galo Carijó,galo-carijo.png
-Galo Ciborgue do SENAI,galo-ciborgue-do-senai.png
-Jurandir a Pomba,jurandir-a-pomba.png
-Canarinho Pistola,canarinho-pistola.png
-Galinha Perdeu,galinha-perdeu.png
-Galinha Peso de Porta,galinha-peso-de-porta.png
-Galo do Atlético Mineiro,galo-atletico-mineiro.png
-Frango da Sadia,frango-da-sadia.png
-Galo de Tênis,galo-de-tenis.png
-Galo do Acre,galo-do-acre.png
-Pinto Armado,pinto-armado.png
-Galinho Tico Liro,galinho-tico-liro.png
-Frango Xadrez,frango-xadrez.png
-Galos de Fralda,galos-de-fralda.png
-Bitelão,bitelao.png
-Black Cock,black-cock.png
-Galinha do CS,galinha-do-cs.png
-Galo Boxeador,galo-boxeador.png
-Peixe Galo,peixe-galo.png
-Peso Pena,peso-pena.png
-Sir Gallinaceo,sir-gallinaceo.png
-Galinha Thanos,galinha-thanos.png
-Galo Ataliba,galo-ataliba.png
+name,image,mask
+Galo de Kalsa,galo-de-kalsa.png,
+Galinha Pintadinha,galinha-pintadinha.png,
+Galo Carijó,galo-carijo.png,
+Galo Ciborgue do SENAI,galo-ciborgue-do-senai.png,
+Jurandir a Pomba,jurandir-a-pomba.png,
+Canarinho Pistola,canarinho-pistola.png,
+Galinha Perdeu,galinha-perdeu.png,
+Galinha Peso de Porta,galinha-peso-de-porta.png,
+Galo do Atlético Mineiro,galo-atletico-mineiro.png,
+Frango da Sadia,frango-da-sadia.png,
+Galo de Tênis,galo-de-tenis.png,
+Galo do Acre,galo-do-acre.png,
+Pinto Armado,pinto-armado.png,
+Galinho Tico Liro,galinho-tico-liro.png,
+Frango Xadrez,frango-xadrez.png,
+Galos de Fralda,galos-de-fralda.png,
+Bitelão,bitelao.png,
+Black Cock,black-cock.png,
+Galinha do CS,galinha-do-cs.png,
+Galo Boxeador,galo-boxeador.png,
+Peixe Galo,peixe-galo.png,
+Peso Pena,peso-pena.png,
+Sir Gallinaceo,sir-gallinaceo.png,
+Galinha Thanos,galinha-thanos.png,thanos-mask.png
+Galo Ataliba,galo-ataliba.png,
