@@ -40,17 +40,20 @@ def uvfilter(img, flt):
     srcd = src.load()
     imgd = img.load()
     uvd = flt.load()
+    R, G, B, A = range(4)
     for x in range(src.width):
         for y in range(src.height):
             new = uvd[x, y]
-            imgd[x, y] = srcd[new[0]*src.width/256, new[1]*src.height/256]
+            new_px = srcd[new[0]*src.width/256, new[1]*src.height/256]
+            a = new[A] if new[A] <= 255 and new_px[A] != 0 else new_px[A]
+            imgd[x, y] = new_px[:A]+(a,)
     return img
 
-def distort_sprite(sprite, mask=os.path.join(ASSETS_ROOT, 'ui/distort_mask.png')):
-    return uvfilter(Image.open(os.path.join(ROOSTERS_ROOT, sprite)).convert('RGBA'), Image.open(mask))
+def distort_sprite(sprite, mask='distort-mask.png'):
+    return uvfilter(Image.open(os.path.join(ROOSTERS_ROOT, sprite)).convert('RGBA'), Image.open(os.path.join(ASSETS_ROOT, 'distort', mask)).convert('RGBA'))
 
-def distort_img(img, mask=os.path.join(ASSETS_ROOT, 'ui/distort_mask.png')):
-    return uvfilter(img, Image.open(mask))
+def distort_img(img, mask='distort-mask.png'):
+    return uvfilter(img, Image.open(os.path.join(ASSETS_ROOT, 'distort', mask)).convert('RGBA'))
 
 def create_progressbar(current, total=1, prev=None, mode=BarText.FACTOR, width=BAR_WIDTH, anchor=Side.LEFT, bg_color='#000000', fg_color='#FF000050', prev_color="#FF0000"):
     prev = current if prev is None else prev
@@ -313,15 +316,18 @@ if __name__ == '__main__':
 
         @db_session
         def do_distort(self, args):
-            """Distort sprite using the default mask (needs db session).\n\tUsage: distort [sprite]
+            """Distort sprite using the default mask (needs db session).\n\tUsage: distort [sprite] [mask]
             """
             sprite = ''
             args = args.strip().split(' ')
-            if args[0] != '':
+            mask = 'distort-mask.png'
+            if not args[0] in ('', '-'):
                 sprite = args[0]
             else:
                 sprite = Rooster.select().random(1)[0].sprite
-            tk.show_img(distort_sprite(sprite))
+            if len(args) > 1:
+                mask = args[1]
+            tk.show_img(distort_sprite(sprite, mask))
 
         @db_session
         def do_battle(self, args):
