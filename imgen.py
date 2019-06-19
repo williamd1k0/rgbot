@@ -107,7 +107,7 @@ def create_movebtn(text, ap=0, color='#000000', scale=1.0, path='data/assets/ui/
     d.text((bar.width-ap_size[0]-10, bar.height-ap_size[1]-10), ap_txt, font=ap_fnt, fill=color)
     return bar.resize([round(n*scale) for n in bar.size], Image.ANTIALIAS)
 
-def create_movesgrid_img(moves, margin=(10, 10), grid=(2, 2)):
+def create_movesgrid_img(moves, margin=(10, 10), grid=(2, 2), mask=None):
     # moves: Image[]
     X, Y = range(2)
     mv_size = moves[0].size
@@ -119,18 +119,24 @@ def create_movesgrid_img(moves, margin=(10, 10), grid=(2, 2)):
             if i < len(moves):
                 mv = moves[i]
                 pos = mv_size[X]*x+margin[X]*x, mv_size[Y]*y+margin[Y]*y
-                bg.paste(mv, pos, mv)
+                bg.paste(mv, pos, mask)
             else:
                 break
             i += 1
     return bg
 
-def create_movesgrid(moves, scale=1.0, margin=(10, 10)):
+def create_movesgrid(moves, highlight=None, scale=1.0, margin=(10, 10)):
     # moves: Move[]
-    moves_img = [
-        create_movebtn(mv.name, mv.cost, scale=scale) for mv in moves
-    ]
-    return create_movesgrid_img(moves_img, margin)
+    moves_img = []
+    mask = None
+    for mv in moves:
+        mv_im = create_movebtn(mv.name, mv.cost, scale=scale)
+        if not mask:
+            mask = mv_im.copy()
+        if highlight != None and highlight != mv:
+            mv_im = ImageOps.grayscale(mv_im)
+        moves_img.append(mv_im)
+    return create_movesgrid_img(moves_img, margin, mask=mask)
 
 def create_battlebg(lalign=270):
     bg = Image.open(os.path.join(ASSETS_ROOT, 'ui/ui_background.png'))
@@ -217,7 +223,12 @@ def create_battle(a:Rooster, b:Rooster, mirror=Side.RIGHT, flags=BattleFlag.NONE
         
         # Attack btns
         mv_scale = 0.5
-        moves = create_movesgrid(list(rt.moves.select()), mv_scale)
+        mv_highlight = None # None will highlight all moves by default
+        if hit == rt or highlight != None and highlight != rt:
+            mv_highlight = ... # Ellipsis will grayscale all moves
+        elif highlight is None:
+            mv_highlight = data.get('attack')
+        moves = create_movesgrid(list(rt.moves.select()), mv_highlight, mv_scale)
         mv_pos = align[r]-moves.width//2, bg.height-moves.height-10
         bg.paste(moves, mv_pos, moves)
         
@@ -232,9 +243,9 @@ def create_battle(a:Rooster, b:Rooster, mirror=Side.RIGHT, flags=BattleFlag.NONE
 def create_highlight(a:Rooster, b:Rooster, highlight=None):
     return create_battle(a, b, flags=BattleFlag.HIGHLIGHT, data={'highlight': highlight})
 
-def create_battle_hit(a:Rooster, b:Rooster, hit=None, hit_type=None, done=False):
+def create_battle_hit(a:Rooster, b:Rooster, hit=None, hit_type=None, attack=None, done=False):
     flag = BattleFlag.HIT
-    data = {'hit': hit, 'hit_type': hit_type}
+    data = {'hit': hit, 'hit_type': hit_type, 'attack': attack}
     if done:
         flag |= BattleFlag.DONE
         data['loser'] = hit
@@ -273,12 +284,13 @@ if __name__ == '__main__':
         def do_grid(self, args):
             """Generate Move button grid (needs db session).\n\tUsage: grid [scale=1.0]
             """
+            from random import choice
             args = args.split(' ')
             scale = 1.0
             if args[0] != '':
                 scale = float(args[0])
-            moves = Move.select().random(4)
-            tk.show_img(create_movesgrid(moves, scale))
+            moves = list(Move.select().random(4))
+            tk.show_img(create_movesgrid(moves, choice(moves), scale=scale))
 
         def do_hp(self, args):
             """Generate HP bar.\n\tUsage: hp [value=0..100] [anchor=left|right]
@@ -324,9 +336,12 @@ if __name__ == '__main__':
                     b = Rooster.get(sprite=args[1])
             a.reset()
             b.reset()
+            hit = choice([a, b])
+            attack = (a if hit != a else b).moves.select().random(1)[0]
             data = {
-                'hit': choice([a, b]),
+                'hit': hit,
                 'hit_type': choice([HitType.HIT, HitType.CRITICAL]),
+                'attack': attack,
             }
             tk.show_img(create_battle_hit(a, b, **data))
 
@@ -343,8 +358,9 @@ if __name__ == '__main__':
                     b = Rooster.get(sprite=args[1])
             a.reset()
             b.reset()
+            hit = choice([a, b])
             kargs = {
-                'hit': choice([a, b]),
+                'hit': hit,
                 'hit_type': choice([HitType.HIT, HitType.CRITICAL]),
                 'done': True,
             }
