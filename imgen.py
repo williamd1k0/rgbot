@@ -2,7 +2,7 @@
 import os
 from enum import IntEnum, IntFlag
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
-from data import Rooster, init_db, db_session
+from data import Rooster, Move, init_db, db_session
 
 class Side(IntEnum):
     LEFT, RIGHT = range(2)
@@ -93,8 +93,8 @@ def create_apbar(current, total=1, prev=None, mode=BarText.CURRENT_TOTAL, anchor
     # Helper function for AP
     return create_progressbar2(current, total, prev, mode, anchor, '#0000FF', '#0000FF50')
 
-def create_movebar(text, ap=0, color='#000000', path='data/assets/ui/ui_button.png'):
-    bar = Image.open(path)
+def create_movebtn(text, ap=0, color='#000000', scale=1.0, path='data/assets/ui/ui_button.png'):
+    bar = Image.open(path).convert('RGBA')
     d = ImageDraw.Draw(bar)
     
     name_fnt = font(REGULAR_FONT, 42)
@@ -105,7 +105,32 @@ def create_movebar(text, ap=0, color='#000000', path='data/assets/ui/ui_button.p
     ap_txt = 'AP%02d' % ap
     ap_size = d.textsize(ap_txt, font=ap_fnt)
     d.text((bar.width-ap_size[0]-10, bar.height-ap_size[1]-10), ap_txt, font=ap_fnt, fill=color)
-    return bar
+    return bar.resize([round(n*scale) for n in bar.size], Image.ANTIALIAS)
+
+def create_movesgrid_img(moves, margin=(10, 10), grid=(2, 2)):
+    # moves: Image[]
+    X, Y = range(2)
+    mv_size = moves[0].size
+    size = [mv_size[n]*grid[n]+(grid[n]-1)*margin[n] for n in (X, Y)]
+    bg = Image.new('RGBA', size, '#FF00FF00')
+    i = 0
+    for y in range(grid[Y]):
+        for x in range(grid[X]):
+            if i < len(moves):
+                mv = moves[i]
+                pos = mv_size[X]*x+margin[X]*x, mv_size[Y]*y+margin[Y]*y
+                bg.paste(mv, pos, mv)
+            else:
+                break
+            i += 1
+    return bg
+
+def create_movesgrid(moves, scale=1.0, margin=(10, 10)):
+    # moves: Move[]
+    moves_img = [
+        create_movebtn(mv.name, mv.cost, scale=scale) for mv in moves
+    ]
+    return create_movesgrid_img(moves_img, margin)
 
 def create_battlebg(lalign=270):
     bg = Image.open(os.path.join(ASSETS_ROOT, 'ui/ui_background.png'))
@@ -190,6 +215,12 @@ def create_battle(a:Rooster, b:Rooster, mirror=Side.RIGHT, flags=BattleFlag.NONE
             ap = ImageOps.grayscale(ap)
         bg.paste(ap, (hp_x, ap_y))
         
+        # Attack btns
+        mv_scale = 0.5
+        moves = create_movesgrid(list(rt.moves.select()), mv_scale)
+        mv_pos = align[r]-moves.width//2, bg.height-moves.height-10
+        bg.paste(moves, mv_pos, moves)
+        
         # Winner stamp
         if rt == winner:
             vic = Image.open(os.path.join(ASSETS_ROOT, 'ui/victory.png')).convert('RGBA')
@@ -224,8 +255,8 @@ if __name__ == '__main__':
             return True
         do_EOF = do_exit
 
-        def do_moves(self, args):
-            """Generate Move UI button.\n\tUsage: moves [ap] attack-name
+        def do_move(self, args):
+            """Generate Move UI button.\n\tUsage: move [ap] attack-name
             """
             args = args.split(' ')
             has_ap = False
@@ -236,7 +267,18 @@ if __name__ == '__main__':
                 import random
                 ap = random.randint(0, 30)
             text = ' '.join(args[1 if has_ap else 0:])
-            tk.show_img(create_movebar(text, ap))
+            tk.show_img(create_movebtn(text, ap, scale=2))
+    
+        @db_session
+        def do_grid(self, args):
+            """Generate Move button grid (needs db session).\n\tUsage: grid [scale=1.0]
+            """
+            args = args.split(' ')
+            scale = 1.0
+            if args[0] != '':
+                scale = float(args[0])
+            moves = Move.select().random(4)
+            tk.show_img(create_movesgrid(moves, scale))
 
         def do_hp(self, args):
             """Generate HP bar.\n\tUsage: hp [value=0..100] [anchor=left|right]
