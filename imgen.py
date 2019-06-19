@@ -227,7 +227,7 @@ def create_battle(a:Rooster, b:Rooster, mirror=Side.RIGHT, flags=BattleFlag.NONE
         # Attack btns
         mv_scale = 0.5
         mv_highlight = None # None will highlight all moves by default
-        if hit == rt or highlight != None and highlight != rt:
+        if hit == rt or (highlight != None and highlight != rt):
             mv_highlight = ... # Ellipsis will grayscale all moves
         elif highlight is None:
             mv_highlight = data.get('attack')
