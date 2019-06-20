@@ -58,8 +58,8 @@ class TootRGB(SnsAPI):
         return status['id']
 
 if __name__ == '__main__':
-    from data import init_db, db_session
     from PIL import Image
+    from data import init_db, db_session
 
     init_db('sns.db')
     with db_session:
