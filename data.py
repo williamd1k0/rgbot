@@ -39,7 +39,8 @@ def load_configs(path='data/config.ini'):
             'critical-chance': parse_percent(battle.get('critical-chance', '20%')),
             'critical-factor': parse_times(battle.get('critical-factor', '2x')),
             'season-duration': int(battle.get('season-duration', '10')),
-            'event-interval': parse_seconds(battle.get('event-interval', '10min'))
+            'event-interval': parse_seconds(battle.get('event-interval', '10min')),
+            'poll-duration': parse_seconds(battle.get('poll-duration', '3h'))
         }
     }
 

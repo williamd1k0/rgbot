@@ -207,9 +207,9 @@ class SeasonManager(object):
 
         poll_msg = TURN_MSG['POLL']
         if self.toot:
-            self.get_toot().poll(*[r.name for r in roosters], poll_msg)
+            self.get_toot().poll(*[r.name for r in roosters], poll_msg, CONFIGS['battle']['poll-duration'])
         # if self.tweet:
-        #     self.get_tweet().poll(*[r.name for r in roosters], poll_msg)
+        #     self.get_tweet().poll(*[r.name for r in roosters], poll_msg, CONFIGS['battle']['poll-duration'])
 
     def recover_battle(self):
         bt = Battle.last_battle()
@@ -240,6 +240,7 @@ class SeasonManager(object):
         attack_msg = ''
         a, b = self.turns.a, self.turns.b
         hit_types = {
+            'ATK_FAIL': imgen.HitType.FAIL,
             'ATK_HIT': imgen.HitType.HIT,
             'ATK_CRITICAL': imgen.HitType.CRITICAL,
         }
@@ -255,9 +256,8 @@ class SeasonManager(object):
                 self.post_msg(msg, im)
             elif key in ('ATK_FAIL', 'ATK_HIT', 'ATK_CRITICAL'):
                 attack = args[2]
-                if key in ('ATK_HIT', 'ATK_CRITICAL'):
-                    hit = args[1]
-                    hit_type = hit_types[key]
+                hit = args[1]
+                hit_type = hit_types[key]
                 attack_msg += self.turns.msg(key, args) + '\n'
             elif key == 'DAMAGE':
                 attack_msg += self.turns.msg(key, args) + '\n'

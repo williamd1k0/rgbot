@@ -11,7 +11,7 @@ class BarText(IntEnum):
     NO_TEXT, FACTOR, CURRENT_TOTAL = range(3)
 
 class HitType(IntEnum):
-    HIT, CRITICAL = range(2)
+    FAIL, HIT, CRITICAL = range(3)
 
 class BattleFlag(IntFlag):
     NONE = 0
@@ -224,13 +224,14 @@ def create_battle(a:Rooster, b:Rooster, mirror=Side.RIGHT, flags=BattleFlag.NONE
             ap = ImageOps.grayscale(ap)
         bg.paste(ap, (hp_x, ap_y))
         
-        # Attack btns
+        # Attack btns // this code is really messed up, sorry
         mv_scale = 0.5
-        mv_highlight = ... # Ellipsis will highlight all moves by default
-        if hit == rt or (highlight != None and highlight != rt):
-            mv_highlight = None # None will grayscale all moves
-        elif highlight is None:
-            mv_highlight = data.get('attack', ...)
+        mv_highlight = None # Ellipsis will highlight all moves by default
+        hit_try = data.get('hit')
+        if hit_try and hit_try != rt:
+            mv_highlight = data.get('attack')
+        elif (highlight is None and hit_try is None) or highlight == rt:
+            mv_highlight = ...
         moves = create_movesgrid(list(rt.moves.select()), mv_highlight, mv_scale)
         mv_pos = align[r]-moves.width//2, bg.height-moves.height-10
         bg.paste(moves, mv_pos, moves)
@@ -247,7 +248,7 @@ def create_highlight(a:Rooster, b:Rooster, highlight=None):
     return create_battle(a, b, flags=BattleFlag.HIGHLIGHT, data={'highlight': highlight})
 
 def create_battle_hit(a:Rooster, b:Rooster, hit=None, hit_type=None, attack=None, done=False):
-    flag = BattleFlag.HIT
+    flag = BattleFlag.HIT if hit_type != HitType.FAIL else 0
     data = {'hit': hit, 'hit_type': hit_type, 'attack': attack}
     if done:
         flag |= BattleFlag.DONE
