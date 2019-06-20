@@ -263,7 +263,7 @@ class SnsAPI(DB.Entity):
 
 class SnsStatus(DB.Entity):
     id = PrimaryKey(int, auto=True)
-    status_id = Optional(int)
+    status_id = Optional(int, size=64)
     sns_api = Optional(SnsAPI)
 
 

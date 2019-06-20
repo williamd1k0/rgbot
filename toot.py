@@ -1,5 +1,6 @@
 
 import os
+from io import BytesIO
 from mastodon import Mastodon
 from data import SnsAPI, SnsStatus, commit
 
@@ -14,10 +15,13 @@ else:
     from random import randint
     class DummyMstdnApi(object):
         def status_post(self, *args, **kargs):
-            print('\t[DummyMstdnApi]', args, kargs)
+            print('\t[DummyMstdnApi/status_post]', args, kargs)
             return { 'id': randint(0, 999999999) }
-        def make_poll(*args):
+        def make_poll(self, *args):
             return
+        def media_post(self, *args, **kargs):
+            print('\t[DummyMstdnApi/media_post]', args, kargs)
+            return { 'id': randint(0, 999999999) }
     mstdn_api = DummyMstdnApi()
 
 class TootRGB(SnsAPI):
@@ -35,7 +39,13 @@ class TootRGB(SnsAPI):
 
     def post(self, msg, img=None, reply=True):
         reply_id = self.last_status_id() if reply and len(self.status) > 0 else None
-        status = self.api.status_post(msg, in_reply_to_id=reply_id)
+        media_id = None
+        if img:
+            fileim = BytesIO()
+            img.save(fileim, 'png')
+            fileim.seek(0)
+            media_id = self.api.media_post(fileim, mime_type='image/png')['id']
+        status = self.api.status_post(msg, in_reply_to_id=reply_id, media_ids=media_id)
         SnsStatus(status_id=status['id'], sns_api=self.id)
         commit()
         return status['id']
@@ -49,7 +59,9 @@ class TootRGB(SnsAPI):
 
 if __name__ == '__main__':
     from data import init_db, db_session
+    from PIL import Image
+
     init_db('sns.db')
     with db_session:
         bot = TootRGB.new()
-        bot.post('ping')
+        bot.post('ping', Image.open('devel/test-img.png'))
