@@ -207,9 +207,9 @@ class SeasonManager(object):
 
         poll_msg = TURN_MSG['POLL']
         if self.toot:
-            self.toot.poll(*[r.name for r in roosters], poll_msg)
-        if self.tweet:
-            self.tweet.poll(*[r.name for r in roosters], poll_msg)
+            self.get_toot().poll(*[r.name for r in roosters], poll_msg)
+        # if self.tweet:
+        #     self.get_tweet().poll(*[r.name for r in roosters], poll_msg)
 
     def recover_battle(self):
         bt = Battle.last_battle()
