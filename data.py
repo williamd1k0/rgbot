@@ -114,6 +114,11 @@ class Rooster(DB.Entity):
         commit()
 
     @classmethod
+    def randomize(cls):
+        for rt in cls.select():
+            cls.generate(rt.id, True)
+
+    @classmethod
     def generate(cls, key=0, regen=False):
         seed()
         key = key or randint(0, len(CANON_ROOSTERS)-1)

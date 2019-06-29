@@ -299,6 +299,7 @@ class SeasonManager(object):
 
     def new_season(self):
         self.current = Season()
+        Rooster.randomize()
         commit()
         self.post_msg(TURN_MSG['NEW_SEASON'].format(t=self.current.id), battle=False, reply=False)
 
