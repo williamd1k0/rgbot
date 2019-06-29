@@ -1,11 +1,13 @@
 
 import os, sys, time
-import tk
+import tkimg
 import imgen
+from enum import IntEnum
 from random import choice, random
 from data import *
-from toot import TootRGB
-from tweet import TweetRGB
+from toot import RGBotToot
+from tweet import RGBotTweet
+
 
 class BattleTurns(object):
     battle = None
@@ -121,9 +123,15 @@ class BattleTurns(object):
                 yield 'KO',
 
 
+class InteractionMode(IntEnum):
+    INPUT, WAIT, ONE_SHOT = range(3)
+
+    @classmethod
+    def from_args(cls, args):
+        return cls.WAIT if args.wait else cls.ONE_SHOT if args.one_shot else cls.INPUT
+
 class SeasonManager(object):
     ACTIVE, NEW, DONE = range(3)
-    WAIT, INPUT = range(2)
     mode = None
     current = None
     turns = None
@@ -132,17 +140,17 @@ class SeasonManager(object):
     tk = False
 
     @db_session
-    def __init__(self, mode=0, tweet=False, toot=False, tk_=False):
+    def __init__(self, mode=InteractionMode.INPUT, tweet=False, toot=False, tk_debug=False):
         self.mode = mode
         if toot:
-            self.toot = TootRGB.new()
+            self.toot = RGBotToot.new()
         if tweet:
             self.tweet = TweetRGB.new()
         with db_session:
             self.current = Season.last()
-        if tk_:
-            self.tk = tk_
-            tk.init_tk()
+        if tk_debug:
+            self.tk = tk_debug
+            tkimg.init_tk()
 
     def post_msg(self, msg, img=None, title=None, subtitle='', battle=True, reply=True):
         toot = self.get_toot(battle)
@@ -155,7 +163,7 @@ class SeasonManager(object):
             msg = '\n\t[%s] %s\n%s' % title, subtitle, msg
         print(msg)
         if self.tk and img:
-            tk.show_img(img)
+            tkimg.show_img(img)
             self.interaction(5)
 
     def get_toot(self, battle=True):
@@ -183,13 +191,17 @@ class SeasonManager(object):
             self.interaction()
 
     def interaction(self, override_time=None):
-        if self.mode == self.WAIT:
+        if self.mode == InteractionMode.WAIT:
             t = override_time if override_time else CONFIGS['battle']['event-interval']
             time.sleep(t)
-        elif self.mode == self.INPUT:
+        elif self.mode == InteractionMode.INPUT:
             input()
             os.system('cls')
             os.system('clear')
+        elif self.mode == InteractionMode.ONE_SHOT:
+            if self.tk:
+                input()
+            sys.exit(0)
 
     def new_battle(self):
         # TODO: rooster selection stuff
@@ -197,9 +209,9 @@ class SeasonManager(object):
         battle = Battle.new(roosters)
         self.turns = BattleTurns(battle)
         if self.toot:
-            self.turns.toot = TootRGB.new(battle)
+            self.turns.toot = RGBotToot.new(battle)
         if self.tweet:
-            self.turns.tweet = TweetRGB.new(battle)
+            self.turns.tweet = RGBotTweet.new(battle)
         self.post_msg(self.turns.msg('new'), imgen.create_battle(self.turns.a, self.turns.b))
 
         self.post_msg(self.turns.msg('a-stats'), imgen.create_highlight(self.turns.a, self.turns.b, self.turns.a))
@@ -217,10 +229,10 @@ class SeasonManager(object):
             return
         self.turns = BattleTurns(bt)
         if self.toot:
-            self.turns.toot = TootRGB.get(battle=bt)
+            self.turns.toot = RGBotToot.get(battle=bt)
             self.turns.toot.set_api()
         if self.tweet:
-            self.turns.tweet = TweetRGB.get(battle=bt)
+            self.turns.tweet = RGBotTweet.get(battle=bt)
             self.turns.tweet.set_api()
 
     def recover_sns_status(self):
@@ -297,15 +309,17 @@ def main(args):
     if args.clear:
         clear_db()
     else:
-        mode = SeasonManager.WAIT if args.wait else SeasonManager.INPUT
+        mode = InteractionMode.from_args(args)
         man = SeasonManager(mode, args.tweet, args.toot, args.tk)
         man.loop()
 
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
-    argp = ArgumentParser('rgb', description='Rinha de Galo BOT')
-    argp.add_argument('-w', '--wait', action='store_true', help='use interval between events instead of user input')
+    argp = ArgumentParser('rgbot', description='Rinha de Galo BOT')
+    modearg = argp.add_mutually_exclusive_group()
+    modearg.add_argument('-w', '--wait', action='store_true', help='use interval between events instead of user input')
+    modearg.add_argument('-o', '--one-shot', action='store_true', help='execute next event and exit')
     argp.add_argument('-T', '--toot', action='store_true', help='enable Mastodon posts')
     argp.add_argument('-t', '--tweet', action='store_true', help='enable Twitter posts (no polls)')
     argp.add_argument('-k', '--tk', action='store_true', help='enable Tk for image debug')

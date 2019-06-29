@@ -4,6 +4,7 @@ from enum import IntEnum, IntFlag
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
 from data import Rooster, Move, init_db, db_session
 
+
 class Side(IntEnum):
     LEFT, RIGHT = range(2)
 
@@ -16,6 +17,7 @@ class HitType(IntEnum):
 class BattleFlag(IntFlag):
     NONE = 0
     HIT, HIGHLIGHT, DONE = (1<<n for n in range(3))
+
 
 BAR_MARGIN = 3
 BAR_WIDTH = 275
@@ -258,7 +260,7 @@ def create_battle_hit(a:Rooster, b:Rooster, hit=None, hit_type=None, attack=None
 
 if __name__ == '__main__':
     from cmd import Cmd
-    import tk
+    import tkimg
 
     class ImagePreviewCmd(Cmd):
         prompt = 'imgen> '
@@ -282,7 +284,7 @@ if __name__ == '__main__':
                 import random
                 ap = random.randint(0, 30)
             text = ' '.join(args[1 if has_ap else 0:])
-            tk.show_img(create_movebtn(text, ap, scale=2))
+            tkimg.show_img(create_movebtn(text, ap, scale=2))
     
         @db_session
         def do_grid(self, args):
@@ -294,7 +296,7 @@ if __name__ == '__main__':
             if args[0] != '':
                 scale = float(args[0])
             moves = list(Move.select().random(4))
-            tk.show_img(create_movesgrid(moves, choice(moves), scale=scale))
+            tkimg.show_img(create_movesgrid(moves, choice(moves), scale=scale))
 
         def do_hp(self, args):
             """Generate HP bar.\n\tUsage: hp [value=0..100] [anchor=left|right]
@@ -313,7 +315,7 @@ if __name__ == '__main__':
                 value = random.random()
             else:
                 value = int(args[0].replace('%', ''))/100
-            tk.show_img(create_hpbar(value, prev=min(value+0.1, 1), anchor=anchor))
+            tkimg.show_img(create_hpbar(value, prev=min(value+0.1, 1), anchor=anchor))
 
         @db_session
         def do_distort(self, args):
@@ -328,7 +330,7 @@ if __name__ == '__main__':
                 sprite = Rooster.select().random(1)[0].sprite
             if len(args) > 1:
                 mask = args[1]
-            tk.show_img(distort_sprite(sprite, mask))
+            tkimg.show_img(distort_sprite(sprite, mask))
 
         @db_session
         def do_battle(self, args):
@@ -350,7 +352,7 @@ if __name__ == '__main__':
                 'hit_type': choice([HitType.HIT, HitType.CRITICAL]),
                 'attack': attack,
             }
-            tk.show_img(create_battle_hit(a, b, **data))
+            tkimg.show_img(create_battle_hit(a, b, **data))
 
         @db_session
         def do_win(self, args):
@@ -371,7 +373,7 @@ if __name__ == '__main__':
                 'hit_type': choice([HitType.HIT, HitType.CRITICAL]),
                 'done': True,
             }
-            tk.show_img(create_battle_hit(a, b, **kargs))
+            tkimg.show_img(create_battle_hit(a, b, **kargs))
 
         @db_session
         def do_highlight(self, args):
@@ -386,8 +388,8 @@ if __name__ == '__main__':
                     b = Rooster.get(sprite=args[1])
             a.reset()
             b.reset()
-            tk.show_img(create_highlight(a, b, choice([a, b])))
+            tkimg.show_img(create_highlight(a, b, choice([a, b])))
 
     init_db()
-    tk.init_tk()
+    tkimg.init_tk()
     ImagePreviewCmd().cmdloop()

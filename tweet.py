@@ -28,7 +28,7 @@ else:
             return MediaModel(randint(0, 999999999))
     twitter_api = DummyTwitterApi()
 
-class TweetRGB(SnsAPI):
+class RGBotTweet(SnsAPI):
     api = None
     poll_ref = None
 
@@ -65,7 +65,7 @@ if __name__ == '__main__':
     from PIL import Image
     from data import init_db, db_session
 
-    init_db('sns.db')
+    init_db('data/sns.db')
     with db_session:
-        bot = TweetRGB.new()
+        bot = RGBotTweet.new()
         bot.post('ping', Image.open('devel/test-img.png'))
