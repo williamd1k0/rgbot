@@ -294,7 +294,10 @@ class SeasonManager(object):
     def season_done(self):
         winner = self.current.winner()
         if winner:
-            self.post_msg(TURN_MSG['SEASON_FINALE'].format(t=self.current.id, win=winner.name), battle=False, reply=False)
+            self.post_msg(
+                TURN_MSG['SEASON_FINALE'].format(t=self.current.id, win=winner.name),
+                imgen.create_season_winner(winner.sprite), battle=False, reply=False
+            )
         self.current = None
 
     def new_season(self):

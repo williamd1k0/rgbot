@@ -253,8 +253,8 @@ class Season(DB.Entity):
             wcount = count(b for b in battles if b.winner==w)
             winners_filtered.append([w, wcount])
         winners_sorted = sorted(winners_filtered, key=lambda w: w[1])
-        if winners_sorted[-1][1] != winners_sorted[-2][1]:
-            return  winners_sorted[-1][0]
+        # if winners_sorted[-1][1] != winners_sorted[-2][1]:
+        return  winners_sorted[-1][0]
 
 
 class SnsAPI(DB.Entity):

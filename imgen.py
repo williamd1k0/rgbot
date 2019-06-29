@@ -258,6 +258,10 @@ def create_battle_hit(a:Rooster, b:Rooster, hit=None, hit_type=None, attack=None
         data['winner'] = a if hit != a else b
     return create_battle(a, b, flags=flag, data=data)
 
+def create_season_winner(winner):
+    im = Image.open(os.path.join(ROOSTERS_ROOT, winner)).convert('RGBA')
+    return im # TODO
+
 if __name__ == '__main__':
     from cmd import Cmd
     import tkimg
@@ -389,6 +393,16 @@ if __name__ == '__main__':
             a.reset()
             b.reset()
             tkimg.show_img(create_highlight(a, b, choice([a, b])))
+
+        @db_session
+        def do_seasonwin(self, args):
+            """Generate Season winner image (needs db session).\n\tUsage: seasonwin [sprite]
+            """
+            args = args.strip().split(' ')
+            a = Rooster.select().random(1)[0]
+            if args[0] != '':
+                a = Rooster.get(sprite=args[0])
+            tkimg.show_img(create_season_winner(a.sprite))
 
     init_db()
     tkimg.init_tk()
