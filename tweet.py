@@ -42,7 +42,7 @@ class RGBotTweet(SnsAPI):
     def set_api(self, twitter_api=twitter_api):
         self.api = twitter_api
 
-    def post(self, msg, img=None, reply=True):
+    def post(self, msg, img=None, reply=True, pin=False):
         reply_id = self.last_status_id() if reply and len(self.status) > 0 else None
         media_id = None
         if img:
@@ -55,6 +55,8 @@ class RGBotTweet(SnsAPI):
         status = self.api.update_status(msg, in_reply_to_status_id=reply_id, media_ids=media_id)
         SnsStatus(status_id=status.id, sns_api=self.id)
         commit()
+        if pin:
+            print('RGBotTweet.post#pin', NotImplemented)
         return status.id
 
     def poll(self, a, b, expires=60*60):

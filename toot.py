@@ -22,6 +22,9 @@ else:
         def media_post(self, *args, **kargs):
             print('\t[DummyMstdnApi/media_post]', args, kargs)
             return { 'id': randint(0, 999999999) }
+        def status_pin(self, *args, **kargs):
+            print('\t[DummyMstdnApi/media_pin]', args, kargs)
+            return { 'id': args[0] }
     mstdn_api = DummyMstdnApi()
 
 class RGBotToot(SnsAPI):
@@ -37,7 +40,7 @@ class RGBotToot(SnsAPI):
     def set_api(self, mstdn_api=mstdn_api):
         self.api = mstdn_api
 
-    def post(self, msg, img=None, reply=True):
+    def post(self, msg, img=None, reply=True, pin=False):
         reply_id = self.last_status_id() if reply and len(self.status) > 0 else None
         media_id = None
         if img:
@@ -48,6 +51,8 @@ class RGBotToot(SnsAPI):
         status = self.api.status_post(msg, in_reply_to_id=reply_id, media_ids=media_id)
         SnsStatus(status_id=status['id'], sns_api=self.id)
         commit()
+        if pin:
+            self.api.status_pin(status['id'])
         return status['id']
 
     def poll(self, a, b, msg='', expires=60*60):

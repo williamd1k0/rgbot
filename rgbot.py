@@ -152,15 +152,13 @@ class SeasonManager(object):
             self.tk = tk_debug
             tkimg.init_tk()
 
-    def post_msg(self, msg, img=None, title=None, subtitle='', battle=True, reply=True):
+    def post_msg(self, msg, img=None, battle=True, reply=True, pin=False):
         toot = self.get_toot(battle)
         if toot:
-            toot.post(msg, img, reply=reply)
+            toot.post(msg, img, reply=reply, pin=pin)
         tweet = self.get_tweet(battle)
         if tweet:
-            tweet.post(msg, img, reply=reply)
-        if title:
-            msg = '\n\t[%s] %s\n%s' % title, subtitle, msg
+            tweet.post(msg, img, reply=reply, pin=pin)
         print(msg)
         if self.tk and img:
             tkimg.show_img(img)
@@ -212,7 +210,7 @@ class SeasonManager(object):
             self.turns.toot = RGBotToot.new(battle)
         if self.tweet:
             self.turns.tweet = RGBotTweet.new(battle)
-        self.post_msg(self.turns.msg('new'), imgen.create_battle(self.turns.a, self.turns.b))
+        self.post_msg(self.turns.msg('new'), imgen.create_battle(self.turns.a, self.turns.b), pin=True)
 
         self.post_msg(self.turns.msg('a-stats'), imgen.create_highlight(self.turns.a, self.turns.b, self.turns.a))
         self.post_msg(self.turns.msg('b-stats'), imgen.create_highlight(self.turns.a, self.turns.b, self.turns.b))
