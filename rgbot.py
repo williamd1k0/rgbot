@@ -304,7 +304,17 @@ class SeasonManager(object):
         commit()
         self.post_msg(TURN_MSG['NEW_SEASON'].format(t=self.current.id), battle=False, reply=False)
 
+def ignore_under_maintenance(func, env_key='RGB_MAINTENANCE'):
+    from functools import wraps
+    @wraps(func)
+    def wrapper(*args, **kargs):
+        if not env_key in os.environ:
+            return func(*args, **kargs)
+        print('[Maintenance] Function ignored: `%s(%s)`' % (func.__name__, args))
+    return wrapper
 
+
+@ignore_under_maintenance
 def main(args):
     sql_debug(args.sqldebug)
     init_db(args.db, not args.clear, args.sqldebug)
