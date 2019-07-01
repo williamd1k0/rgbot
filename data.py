@@ -236,12 +236,17 @@ class Turn(DB.Entity):
 class Season(DB.Entity):
     id = PrimaryKey(int, auto=True)
     battles = Set(Battle)
+    done = Optional(bool, default=False)
 
     @classmethod
     def last(cls):
         return cls.select().sort_by(-1).first()
 
-    def is_done(self):
+    def set_done(self, done):
+        self.done = done
+        commit()
+
+    def is_over(self):
         battles = select(b for b in Battle if b.season==self and b.winner)
         return battles.count() >= CONFIGS['battle']['season-duration']
 

@@ -283,9 +283,10 @@ class SeasonManager(object):
             self.post_msg(attack_msg.strip(), im)
 
     def check_state(self):
-        if not self.current:
+        if self.current is None or self.current.done:
+            # `Season.done` will trigger New Season if using InteractionMode.ONE_SHOT
             return self.NEW
-        if self.current.is_done():
+        if self.current.is_over():
             return self.DONE
         return self.ACTIVE
 
@@ -296,6 +297,7 @@ class SeasonManager(object):
                 TURN_MSG['SEASON_FINALE'].format(t=self.current.id, win=winner.name),
                 imgen.create_season_winner(winner.sprite), battle=False, reply=False
             )
+        Season.get(id=self.current.id).set_done(True) # PonyORM is kinda weird
         self.current = None
 
     def new_season(self):
