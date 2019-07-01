@@ -34,9 +34,10 @@ Twitter: *Em breve*
 - Python 3.5+
 - PostgreSQL (ou SQLite3)
 
-## Bibliotecas
+### Bibliotecas
 
 - pony (ORM/Banco de dados)
 - pillow (Manipulador de imagens)
-- psycopg2 (PostgreSQL para Python )- tweepy (Twitter API)
+- psycopg2 (PostgreSQL para Python)
+- tweepy (Twitter API)
 - Mastodon.py (Mastodon API)
