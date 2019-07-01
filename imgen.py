@@ -37,6 +37,7 @@ def font(path, size):
 
 def uvfilter(img, flt):
     # resize to save calculations on image iteration
+    # NOTE: this method adds some artifacts in the image if size is not power of 2.
     flt = flt.resize(img.size, Image.ANTIALIAS)
     src = img.copy()
     srcd = src.load()
