@@ -13,18 +13,31 @@ if TOKEN and URL:
     mstdn_api = Mastodon(access_token=TOKEN, api_base_url=URL)
 else:
     from random import randint
+    from collections import namedtuple
+    UserModel = namedtuple('User', ['id'])
+    StatusModel = namedtuple('Status', ['id'])
+    MediaModel = namedtuple('Media', ['id'])
     class DummyMstdnApi(object):
         def status_post(self, *args, **kargs):
-            print('\t[DummyMstdnApi/status_post]', args, kargs)
-            return { 'id': randint(0, 999999999) }
+            print('[DummyMstdnApi/status_post]', args, kargs)
+            return StatusModel(randint(0, 999999999))
         def make_poll(self, *args):
             return
         def media_post(self, *args, **kargs):
-            print('\t[DummyMstdnApi/media_post]', args, kargs)
-            return { 'id': randint(0, 999999999) }
-        def status_pin(self, *args, **kargs):
-            print('\t[DummyMstdnApi/media_pin]', args, kargs)
-            return { 'id': args[0] }
+            print('[DummyMstdnApi/media_post]', args, kargs)
+            return MediaModel(randint(0, 999999999))
+        def status_pin(self, id):
+            print('[DummyMstdnApi/status_pin]', id)
+            return StatusModel(id)
+        def status_unpin(self, id):
+            print('[DummyMstdnApi/status_unpin]', id)
+            return StatusModel(id)
+        def account_verify_credentials(self):
+            print('[DummyMstdnApi/account_verify_credentials]')
+            return UserModel(randint(0, 999999999))
+        def account_statuses(self, *args, **kargs):
+            print('[DummyMstdnApi/account_statuses]', args, kargs)
+            return [StatusModel(randint(0, 999999999))]
     mstdn_api = DummyMstdnApi()
 
 class RGBotToot(SnsAPI):
@@ -47,22 +60,30 @@ class RGBotToot(SnsAPI):
             fileim = BytesIO()
             img.save(fileim, 'png')
             fileim.seek(0)
-            media_id = self.api.media_post(fileim, mime_type='image/png')['id']
+            media_id = self.api.media_post(fileim, mime_type='image/png').id
         status = self.api.status_post(msg, in_reply_to_id=reply_id, media_ids=media_id)
-        SnsStatus(status_id=status['id'], sns_api=self.id)
+        SnsStatus(status_id=status.id, sns_api=self.id)
         commit()
         if pin:
-            # Temp disable pin
-            print('RGBotToot.post#pin', NotImplemented)
-            # self.api.status_pin(status['id'])
-        return status['id']
+            self.pin(status.id)
+        return status.id
+
+    def pin(self, status_id, unpin_all=True):
+        if unpin_all:
+            self.unpin_all()
+        self.api.status_pin(status_id)
+
+    def unpin_all(self):
+        user_id = self.api.account_verify_credentials().id
+        for status in self.api.account_statuses(user_id, pinned=True):
+            self.api.status_unpin(status.id)
 
     def poll(self, a, b, msg='', expires=60*60):
         poll = self.api.make_poll([a, b], expires)
         reply_id = self.last_status_id()
         status = self.api.status_post(msg, in_reply_to_id=reply_id, poll=poll)
-        SnsStatus(status_id=status['id'], sns_api=self.id)
-        return status['id']
+        SnsStatus(status_id=status.id, sns_api=self.id)
+        return status.id
 
 if __name__ == '__main__':
     from PIL import Image
@@ -71,4 +92,4 @@ if __name__ == '__main__':
     init_db('data/sns.db')
     with db_session:
         bot = RGBotToot.new()
-        bot.post('ping', Image.open('devel/test-img.png'))
+        bot.post('ping', Image.open('devel/test-img.png'), pin=True)

@@ -21,10 +21,10 @@ else:
     MediaModel = namedtuple('Media', ['media_id'])
     class DummyTwitterApi(object):
         def update_status(self, *args, **kargs):
-            print('\t[DummyTwitterApi/update_status]', args, kargs)
+            print('[DummyTwitterApi/update_status]', args, kargs)
             return StatusModel(randint(0, 999999999))
         def media_upload(self, *args, **kargs):
-            print('\t[DummyTwitterApi/media_upload]', args, kargs)
+            print('[DummyTwitterApi/media_upload]', args, kargs)
             return MediaModel(randint(0, 999999999))
     twitter_api = DummyTwitterApi()
 
@@ -56,12 +56,20 @@ class RGBotTweet(SnsAPI):
         SnsStatus(status_id=status.id, sns_api=self.id)
         commit()
         if pin:
-            print('RGBotTweet.post#pin', NotImplemented)
+            self.pin(status.id)
         return status.id
+
+    def pin(self, status_id, unpin_all=True):
+        if unpin_all:
+            self.unpin_all()
+        print('RGBotTweet.pin', NotImplemented)
+
+    def unpin_all(self):
+        print('RGBotTweet.unpin_all', NotImplemented)
 
     def poll(self, a, b, expires=60*60):
         # Twitter does not provide a poll API ¯\_(シ)_/¯
-        return
+        print('RGBotTweet.poll', NotImplemented)
 
 if __name__ == '__main__':
     from PIL import Image
@@ -70,4 +78,4 @@ if __name__ == '__main__':
     init_db('data/sns.db')
     with db_session:
         bot = RGBotTweet.new()
-        bot.post('ping', Image.open('devel/test-img.png'))
+        bot.post('ping', Image.open('devel/test-img.png'), pin=True)
