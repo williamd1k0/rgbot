@@ -130,8 +130,10 @@ class InteractionMode(IntEnum):
     def from_args(cls, args):
         return cls.WAIT if args.wait else cls.ONE_SHOT if args.one_shot else cls.INPUT
 
-class SeasonManager(object):
+class SeasonState(IntEnum):
     ACTIVE, NEW, DONE = range(3)
+
+class SeasonManager(object):
     mode = None
     current = None
     turns = None
@@ -174,16 +176,16 @@ class SeasonManager(object):
     def loop(self):
         while True:
             state = self.check_state()
-            if state == self.ACTIVE:
+            if state == SeasonState.ACTIVE:
                 if not self.turns:
                     self.recover_battle()
                 if not self.turns or self.turns.is_done():
                     self.new_battle()
                 else:
                     self.next_turn()
-            elif state == self.NEW:
+            elif state == SeasonState.NEW:
                 self.new_season()
-            elif state == self.DONE:
+            elif state == SeasonState.DONE:
                 self.season_done()
             sys.stdout.flush()
             self.interaction()
@@ -285,10 +287,10 @@ class SeasonManager(object):
     def check_state(self):
         if self.current is None or self.current.done:
             # `Season.done` will trigger New Season if using InteractionMode.ONE_SHOT
-            return self.NEW
+            return SeasonState.NEW
         if self.current.is_over():
-            return self.DONE
-        return self.ACTIVE
+            return SeasonState.DONE
+        return SeasonState.ACTIVE
 
     def season_done(self):
         winner = self.current.winner()
