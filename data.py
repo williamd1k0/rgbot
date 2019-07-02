@@ -2,7 +2,7 @@
 import csv, re, os
 from configparser import RawConfigParser
 from datetime import datetime
-from random import random, randint, seed
+from random import random, randint
 from pony.orm import *
 
 
@@ -120,10 +120,8 @@ class Rooster(DB.Entity):
 
     @classmethod
     def generate(cls, key=0, regen=False):
-        seed()
         key = key or randint(0, len(CANON_ROOSTERS)-1)
         gen = cls.get(id=key)
-        seed(key)
         if gen:
             if regen:
                 gen.HP = randint(*CONFIGS['gen']['hp'])
