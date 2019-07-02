@@ -24,4 +24,3 @@ def show_img(img):
     IMG = ImageTk.PhotoImage(img)
     PANEL.configure(image=IMG)
     PANEL.pack(side="bottom", fill="both", expand="yes")
-
