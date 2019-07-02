@@ -52,7 +52,9 @@ class RGBotToot(SnsAPI):
         SnsStatus(status_id=status['id'], sns_api=self.id)
         commit()
         if pin:
-            self.api.status_pin(status['id'])
+            # Temp disable pin
+            print('RGBotToot.post#pin', NotImplemented)
+            # self.api.status_pin(status['id'])
         return status['id']
 
     def poll(self, a, b, msg='', expires=60*60):
