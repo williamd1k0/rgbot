@@ -147,7 +147,7 @@ class SeasonManager(object):
         if toot:
             self.toot = RGBotToot.new()
         if tweet:
-            self.tweet = TweetRGB.new()
+            self.tweet = RGBotToot.new()
         with db_session:
             self.current = Season.last()
         if tk_debug:
@@ -219,7 +219,7 @@ class SeasonManager(object):
 
         poll_msg = TURN_MSG['POLL']
         if self.toot:
-            self.get_toot().poll(*[r.name for r in roosters], poll_msg, CONFIGS['battle']['poll-duration'])
+            self.get_toot().poll(*[r.name for r in roosters], poll_msg)
         # if self.tweet:
         #     self.get_tweet().poll(*[r.name for r in roosters], poll_msg, CONFIGS['battle']['poll-duration'])
 

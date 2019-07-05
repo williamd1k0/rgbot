@@ -2,7 +2,7 @@
 import os
 import tweepy
 from tempfile import NamedTemporaryFile
-from data import SnsAPI, SnsStatus, commit
+from data import CONFIGS, SnsAPI, SnsStatus, commit
 
 API_KEY = os.environ.get('TWITTER_API_KEY')
 API_SECRET =  os.environ.get('TWITTER_API_SECRET')
@@ -52,6 +52,11 @@ class RGBotTweet(SnsAPI):
             media = self.api.media_upload(fileim.name)
             media_id = [media.media_id]
             os.unlink(fileim.name)
+        tags = ''
+        for tag in CONFIGS['sns']['hashtags']:
+            tags += '\n#%s' % tag
+        if tags:
+            msg += '\n' + tags
         status = self.api.update_status(msg, in_reply_to_status_id=reply_id, media_ids=media_id)
         SnsStatus(status_id=status.id, sns_api=self.id)
         commit()
@@ -67,9 +72,10 @@ class RGBotTweet(SnsAPI):
     def unpin_all(self):
         print('RGBotTweet.unpin_all', NotImplemented)
 
-    def poll(self, a, b, expires=60*60):
+    def poll(self, a, b, expires=CONFIGS['sns']['poll-duration']):
         # Twitter does not provide a poll API ¯\_(シ)_/¯
         print('RGBotTweet.poll', NotImplemented)
+
 
 if __name__ == '__main__':
     from PIL import Image

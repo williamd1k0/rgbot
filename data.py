@@ -24,11 +24,14 @@ def load_configs(path='data/config.ini'):
         if 'min' in t:
             return int(t.replace('min', ''))*60
         return int(t.replace('s', ''))
+    def parse_tags(l):
+        return [i.strip() for i in l.strip().replace(' ', ',').split(',') if i.strip()]
 
     conf = RawConfigParser()
     conf.read(path)
     gen = conf['GEN'] if 'GEN' in conf else {}
     battle = conf['BATTLE'] if 'BATTLE' in conf else {}
+    sns = conf['SNS'] if 'SNS' in conf else {}
     return {
         'gen': {
             'hp': parse_range(gen.get('HP', '30..40')),
@@ -40,7 +43,11 @@ def load_configs(path='data/config.ini'):
             'critical-factor': parse_times(battle.get('critical-factor', '2x')),
             'season-duration': int(battle.get('season-duration', '10')),
             'event-interval': parse_seconds(battle.get('event-interval', '10min')),
-            'poll-duration': parse_seconds(battle.get('poll-duration', '3h'))
+            
+        },
+        'sns': {
+            'hashtags': parse_tags(sns.get('hashtags', '')),
+            'poll-duration': parse_seconds(sns.get('poll-duration', '3h')),
         }
     }
 

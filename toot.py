@@ -2,7 +2,7 @@
 import os
 from io import BytesIO
 from mastodon import Mastodon
-from data import SnsAPI, SnsStatus, commit
+from data import CONFIGS, SnsAPI, SnsStatus, commit
 
 
 TOKEN = os.environ.get('MSTDN_TOKEN')
@@ -21,7 +21,8 @@ else:
         def status_post(self, *args, **kargs):
             print('[DummyMstdnApi/status_post]', args, kargs)
             return StatusModel(randint(0, 999999999))
-        def make_poll(self, *args):
+        def make_poll(self, *args, **kargs):
+            print('[DummyMstdnApi/make_poll]', args, kargs)
             return
         def media_post(self, *args, **kargs):
             print('[DummyMstdnApi/media_post]', args, kargs)
@@ -61,6 +62,11 @@ class RGBotToot(SnsAPI):
             img.save(fileim, 'png')
             fileim.seek(0)
             media_id = self.api.media_post(fileim, mime_type='image/png').id
+        tags = ''
+        for tag in CONFIGS['sns']['hashtags']:
+            tags += '\n#%s' % tag
+        if tags:
+            msg += '\n' + tags
         status = self.api.status_post(msg, in_reply_to_id=reply_id, media_ids=media_id)
         SnsStatus(status_id=status.id, sns_api=self.id)
         commit()
@@ -78,12 +84,18 @@ class RGBotToot(SnsAPI):
         for status in self.api.account_statuses(user_id, pinned=True):
             self.api.status_unpin(status.id)
 
-    def poll(self, a, b, msg='', expires=60*60):
+    def poll(self, a, b, msg='', expires=CONFIGS['sns']['poll-duration']):
         poll = self.api.make_poll([a, b], expires)
         reply_id = self.last_status_id()
+        tags = ''
+        for tag in CONFIGS['sns']['hashtags']:
+            tags += '\n#%s' % tag
+        if tags:
+            msg += '\n' + tags
         status = self.api.status_post(msg, in_reply_to_id=reply_id, poll=poll)
         SnsStatus(status_id=status.id, sns_api=self.id)
         return status.id
+
 
 if __name__ == '__main__':
     from PIL import Image
