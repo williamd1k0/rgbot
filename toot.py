@@ -33,6 +33,8 @@ else:
         def status_unpin(self, id):
             print('[DummyMstdnApi/status_unpin]', id)
             return StatusModel(id)
+        def status_delete(self, id):
+            print('[DummyMstdnApi/status_delete]', id)
         def account_verify_credentials(self):
             print('[DummyMstdnApi/account_verify_credentials]')
             return UserModel(randint(0, 999999999))
@@ -96,12 +98,20 @@ class RGBotToot(SnsAPI):
         SnsStatus(status_id=status.id, sns_api=self.id)
         return status.id
 
+    def delete_all(self):
+        user_id = self.api.account_verify_credentials().id
+        for status in self.api.account_statuses(user_id):
+            self.api.status_delete(status.id)
 
 if __name__ == '__main__':
+    import sys
     from PIL import Image
     from data import init_db, db_session
 
     init_db('data/sns.db')
     with db_session:
         bot = RGBotToot.new()
-        bot.post('ping', Image.open('devel/test-img.png'), pin=True)
+        if 'clear' in sys.argv:
+            bot.delete_all()
+        else:
+            bot.post('ping', Image.open('devel/test-img.png'), pin=True)

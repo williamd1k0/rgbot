@@ -1,6 +1,7 @@
 # RGBot :rooster: (Rinha de Galo BOT)
 
-![heroku](devel/heroku.png)
+![heroku](https://img.shields.io/static/v1?label=heroku&message=deployed&color=success&style=flat-square&logo=heroku)
+<!-- The Heroku badge is static because it's deployed via Heroku Scheduler -->
 ![python](https://img.shields.io/badge/python-3.5%2B-blue.svg?style=flat-square)
 ![godot](https://img.shields.io/badge/Godot-3.1%2B-blue.svg?style=flat-square)
 ![license](https://img.shields.io/badge/License-Meteor-lightgray.svg?style=flat-square)
