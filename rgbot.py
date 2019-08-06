@@ -147,7 +147,7 @@ class SeasonManager(object):
         if toot:
             self.toot = RGBotToot.new()
         if tweet:
-            self.tweet = RGBotToot.new()
+            self.tweet = RGBotTweet.new()
         with db_session:
             self.current = Season.last()
         if tk_debug:
@@ -234,10 +234,6 @@ class SeasonManager(object):
         if self.tweet:
             self.turns.tweet = RGBotTweet.get(battle=bt)
             self.turns.tweet.set_api()
-
-    def recover_sns_status(self):
-        if self.toot:
-            self.toot
 
     def next_turn(self):
         # Helper info
