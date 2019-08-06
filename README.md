@@ -26,7 +26,7 @@ Por ser automático, você não pode influenciar a luta - apenas torça pelo seu
 
 Mastodon: https://botsin.space/@rgbot
 
-Twitter: *Em breve*
+Twitter: https://twitter.com/rinhadegalobot
 
 ## Desenvolvimento
 
