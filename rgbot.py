@@ -323,6 +323,11 @@ def main(args):
     else:
         mode = InteractionMode.from_args(args)
         man = SeasonManager(mode, args.tweet, args.toot, args.tk)
+        max_seasons = CONFIGS['db']['max-seasons']
+        if man.current != None and max_seasons > 0:
+            if max_seasons <= man.current.id and man.current.done:
+                clear_db()
+                return
         man.loop()
 
 
