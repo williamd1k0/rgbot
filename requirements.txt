@@ -1,5 +1,5 @@
-pony
-pillow
-Mastodon.py
-tweepy
-psycopg2
+pony==0.7.13
+Pillow==7.0.0
+Mastodon.py==1.5.1
+tweepy==3.8.0
+psycopg2==2.8.4
