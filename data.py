@@ -109,18 +109,23 @@ class Rooster(DB.Entity):
 
     @classmethod
     def init_canon(cls):
-        for r in CANON_ROOSTERS:
-            if cls.get(name=r[0]): continue
-            data = {
-                'name': r[0],
-                'sprite': r[1],
-                'mask': r[2],
-                'HP': randint(*CONFIGS['gen']['hp']),
-                'AP': randint(*CONFIGS['gen']['ap']),
-                'moves': Move.select().random(CONFIGS['gen']['moves']),
-                'is_canon': True,
-            }
-            cls(**data)
+        for i, r in enumerate(CANON_ROOSTERS, 1):
+            rooster = cls.get(id=i)
+            if rooster: # Update existing Rooster
+                rooster.name = r[0]
+                rooster.sprite = r[1]
+                rooster.mask = r[2]
+            else:
+                data = {
+                    'name': r[0],
+                    'sprite': r[1],
+                    'mask': r[2],
+                    'HP': randint(*CONFIGS['gen']['hp']),
+                    'AP': randint(*CONFIGS['gen']['ap']),
+                    'moves': Move.select().random(CONFIGS['gen']['moves']),
+                    'is_canon': True,
+                }
+                cls(**data)
         commit()
 
     @classmethod
