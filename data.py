@@ -74,7 +74,7 @@ def load_messages_data(path='data/messages.csv'):
     data.close()
     return msgs
 
-def load_canon_roosters(path='data/roosters-canon.csv'):
+def load_canon_roosters(path='data/roosters.csv'):
     roosters = []
     with open(path, 'r', encoding='utf-8') as data:
         csv_data = csv.DictReader(data)
